@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wenup — Document Intake Assistant</title>
+  <title>Wenup - Document Intake Assistant</title>
   <meta name="description" content="Conversational legal intake assistant drafting a fictional Personal Wishes Document with explicit structured state, deterministic validation, and automatic LLM fallback." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="alternate icon" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -213,7 +215,7 @@
           <div class="state-panel-intro">
             <div class="state-intro-text">
               <h3 class="sr-only" id="preview-heading">Structured State</h3>
-              <p>Canonical <code>IntakeState</code> schema (3×3 Field Tiles) — tap any tile to flip between field data and illustrated artwork.</p>
+              <p>Canonical <code>IntakeState</code> schema (3×3 Field Tiles) — complete all fields to unlock illustrated tile artwork &amp; draft document.</p>
             </div>
             <div class="state-actions-bar">
               <button type="button" class="finish-early-btn" id="state-finish-btn" title="Finish intake and view generated document now" style="display: none;">
@@ -281,9 +283,12 @@
           </div>
 
           <div class="document-parchment-frame">
-            <div class="document-sheet">
+            <div class="document-sheet" id="document-sheet">
               <div class="document-watermark">FICTIONAL DEMO</div>
-              <pre class="document-text" id="document-text">Answers will appear here as a draft once you start the interview.</pre>
+              <div class="document-formatted-view" id="document-formatted-view">
+                <!-- Dynamically rendered structured formal legal document with borders and lines -->
+              </div>
+              <pre class="document-text" id="document-text" style="display: none;">Answers will appear here as a draft once you start the interview.</pre>
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ const els = {
   turnCounter: document.getElementById("turn-counter"),
   stateCardsGrid: document.getElementById("state-cards-grid"),
   documentText: document.getElementById("document-text"),
+  documentFormattedView: document.getElementById("document-formatted-view"),
   docStatusBadge: document.getElementById("doc-status-badge"),
   copyDocBtn: document.getElementById("copy-doc-btn"),
   copyBtnText: document.getElementById("copy-btn-text"),
@@ -372,22 +373,21 @@ function renderStateCards(state, recentlyUpdated = []) {
     }
 
     // Determine whether card is flipped to back face (showing illustrated artwork tile)
+    // ONLY flip at the end when all 9 tiles turn from pending to completed (or when finalized)
     let shouldBeFlipped = false;
     if (isEditing) {
       shouldBeFlipped = false; // Always show front face when editing
     } else if (globalForceFlipMode !== null) {
       shouldBeFlipped = globalForceFlipMode;
-    } else if (manualFlippedCards.has(meta.key)) {
-      shouldBeFlipped = manualFlippedCards.get(meta.key);
     } else {
-      shouldBeFlipped = allNineFilled || confirmed;
+      // Flip all cards ONLY when all 9 fields are fully completed
+      shouldBeFlipped = allNineFilled;
     }
 
     const cardContainer = document.createElement("div");
     cardContainer.className = `state-card-flip-container ${shouldBeFlipped ? "is-flipped" : ""} ${isUpdated ? "highlight-update" : ""}`;
     cardContainer.dataset.fieldKey = meta.key;
     cardContainer.dataset.tileIndex = meta.tileIndex;
-    cardContainer.title = isEditing ? "Editing field value" : (shouldBeFlipped ? "Click to view field data" : "Click to view illustrated tile artwork");
 
     // Construct Front Face Content (either view mode or edit mode)
     let frontBodyHtml = "";
@@ -439,37 +439,35 @@ function renderStateCards(state, recentlyUpdated = []) {
       }
     } else {
       frontBodyHtml = `
-        <div class="state-card-value clickable-val ${!displayVal ? "empty" : ""}" id="tile-val-click-${meta.tileIndex}" title="Click to edit this field">
-          ${displayVal || "Not yet provided"}
+        <div class="state-card-body">
+          <div class="state-card-value ${!displayVal ? "empty" : ""}" id="tile-val-click-${meta.tileIndex}">
+            ${displayVal || "Not yet provided"}
+          </div>
+          ${isClarify ? `<div class="state-card-clarification-note">⚠️ ${flagged[meta.key]}</div>` : ""}
         </div>
-        ${isClarify ? `<div class="state-card-clarification-note">⚠️ ${flagged[meta.key]}</div>` : ""}
         <div class="state-card-footer">
-          <span class="flip-hint-btn" id="tile-flip-hint-${meta.tileIndex}">🖼️ View Tile #${meta.tileIndex}</span>
+          <button type="button" class="tile-edit-btn" id="tile-edit-btn-${meta.tileIndex}" title="Edit ${meta.label}">✏️ Edit</button>
         </div>
       `;
     }
 
     cardContainer.innerHTML = `
       <div class="state-card-inner">
-        <!-- FRONT FACE: Structured Field Data & Direct Edit Controls -->
+        <!-- FRONT FACE: Structured Field Data & Single Direct Edit Control -->
         <div class="state-card-face state-card-front">
           <div class="state-card-header">
             <span class="state-card-label">
               <span class="tile-number-badge">#${meta.tileIndex}</span>
-              ${meta.icon} ${meta.label}
+              <span class="tile-label-text">${meta.icon} ${meta.label}</span>
             </span>
-            <div class="card-header-actions">
-              <button type="button" class="tile-edit-btn" id="tile-edit-btn-${meta.tileIndex}" title="Edit this field">✏️ Edit</button>
-              <span class="state-pill ${statusType}">${statusText}</span>
-            </div>
+            <span class="state-pill ${statusType}">${statusText}</span>
           </div>
           ${frontBodyHtml}
         </div>
 
-        <!-- BACK FACE: Illustrated Field Tile Artwork -->
+        <!-- BACK FACE: Illustrated Field Tile Artwork (10.png for 1-8, 11.png for 9) -->
         <div class="state-card-face state-card-back">
           <div class="tile-image-wrapper">
-            <button type="button" class="tile-art-edit-tag" id="tile-art-edit-${meta.tileIndex}" title="Edit field value">✏️ Edit</button>
             <img src="${meta.image}" alt="Field Tile #${meta.tileIndex} - ${meta.label}" class="tile-art-img" loading="lazy" />
           </div>
         </div>
@@ -514,60 +512,16 @@ function renderStateCards(state, recentlyUpdated = []) {
         });
       }
     } else {
-      // Wire Edit button
+      // Wire single Edit button on front face
       const editBtn = cardContainer.querySelector(`#tile-edit-btn-${meta.tileIndex}`);
       if (editBtn) {
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           activeEditingField = meta.key;
-          manualFlippedCards.set(meta.key, false);
           renderStateCards(latestState);
         });
       }
-
-      // Wire clickable value
-      const valClickEl = cardContainer.querySelector(`#tile-val-click-${meta.tileIndex}`);
-      if (valClickEl) {
-        valClickEl.addEventListener("click", (e) => {
-          e.stopPropagation();
-          activeEditingField = meta.key;
-          manualFlippedCards.set(meta.key, false);
-          renderStateCards(latestState);
-        });
-      }
-
-      // Wire Flip hint button
-      const flipHintBtn = cardContainer.querySelector(`#tile-flip-hint-${meta.tileIndex}`);
-      if (flipHintBtn) {
-        flipHintBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const isCurrentlyFlipped = cardContainer.classList.contains("is-flipped");
-          const nextFlipped = !isCurrentlyFlipped;
-          cardContainer.classList.toggle("is-flipped", nextFlipped);
-          manualFlippedCards.set(meta.key, nextFlipped);
-        });
-      }
     }
-
-    // Wire back face edit tag
-    const artEditBtn = cardContainer.querySelector(`#tile-art-edit-${meta.tileIndex}`);
-    if (artEditBtn) {
-      artEditBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        activeEditingField = meta.key;
-        manualFlippedCards.set(meta.key, false);
-        renderStateCards(latestState);
-      });
-    }
-
-    // Click on card background flips card (unless in edit mode)
-    cardContainer.addEventListener("click", () => {
-      if (activeEditingField === meta.key) return;
-      const isCurrentlyFlipped = cardContainer.classList.contains("is-flipped");
-      const nextFlipped = !isCurrentlyFlipped;
-      cardContainer.classList.toggle("is-flipped", nextFlipped);
-      manualFlippedCards.set(meta.key, nextFlipped);
-    });
 
     els.stateCardsGrid.appendChild(cardContainer);
   });
@@ -581,11 +535,271 @@ function renderStateCards(state, recentlyUpdated = []) {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function renderDocument(doc) {
   lastDocumentContent = doc;
   if (els.documentText) {
     els.documentText.textContent = doc || "Draft document will appear here once intake begins.";
   }
+  if (!els.documentFormattedView) return;
+
+  if (!doc || doc.trim() === "" || (!latestState?.full_name && !latestState?.home_address)) {
+    els.documentFormattedView.innerHTML = `
+      <div style="text-align: center; padding: 48px 20px; color: #7B6E96;">
+        <div style="font-size: 32px; margin-bottom: 12px;">📜</div>
+        <h3 style="font-family: var(--font-serif); font-size: 18px; color: #2D006B; margin-bottom: 6px;">Draft Personal Wishes Document</h3>
+        <p style="font-size: 13.5px; max-width: 420px; margin: 0 auto; line-height: 1.5;">
+          Your document will draft automatically in real time with formal legal formatting as you answer questions in the intake chat.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const state = latestState || {};
+  const testatorName = state.full_name || "[Not yet provided]";
+  const homeAddress = state.home_address || "[Not yet provided]";
+  const formattedDate = new Date().toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+
+  // Section 1: Declaration & Domicile
+  const sec1 = `I, <strong>${escapeHtml(testatorName)}</strong>, residing at <strong>${escapeHtml(homeAddress)}</strong>, being of sound mind and memory, do hereby set forth my wishes and testamentary instructions regarding the disposition of my estate, personal effects, and testamentary arrangements.`;
+
+  // Section 2: Worldwide Scope
+  let sec2 = "";
+  if (state.covers_worldwide_assets === true) {
+    sec2 = "This instrument is intended to govern and cover all my assets worldwide, across all national and international jurisdictions.";
+  } else if (state.covers_worldwide_assets === false) {
+    sec2 = "This instrument is strictly limited to assets held within my home jurisdiction and does not cover foreign assets.";
+  } else {
+    sec2 = "<span style='color: #8C7B1E; font-style: italic;'>[Whether this document covers worldwide assets has not yet been confirmed.]</span>";
+  }
+
+  // Section 3: Children / Beneficiaries
+  let sec3 = "";
+  if (state.has_children === true) {
+    if (state.children_names && state.children_names.length > 0) {
+      sec3 = `I declare that I have the following child(ren): <strong>${escapeHtml(state.children_names.join(", "))}</strong>.`;
+    } else {
+      sec3 = "I confirm that I have children, but their individual legal names have not yet been specified.";
+    }
+  } else if (state.has_children === false) {
+    sec3 = "I confirm that I have no children.";
+  } else {
+    sec3 = "<span style='color: #8C7B1E; font-style: italic;'>[Whether I have children has not yet been confirmed.]</span>";
+  }
+
+  // Section 4: Executor
+  let sec4 = "";
+  const execName = state.executor?.name || "[Not yet provided]";
+  const execRel = state.executor?.relationship;
+  if (execRel) {
+    sec4 = `I appoint <strong>${escapeHtml(execName)}</strong> (${escapeHtml(execRel)}) as the sole legal executor and personal representative of this instrument.`;
+  } else {
+    sec4 = `I appoint <strong>${escapeHtml(execName)}</strong> as the executor of this instrument. <span style='color: #8C7B1E; font-style: italic;'>[Relationship to testator not yet confirmed.]</span>`;
+  }
+
+  // Section 5: Specific Gifts
+  let sec5Html = "";
+  if (state.specific_gifts && state.specific_gifts.length > 0) {
+    const items = state.specific_gifts.map(g => `<li>${escapeHtml(g)}</li>`).join("");
+    sec5Html = `
+      <div class="doc-gifts-box">
+        <ul class="doc-gifts-list">
+          ${items}
+        </ul>
+      </div>
+    `;
+  } else if (state.gifts_addressed) {
+    sec5Html = "<p class='doc-section-text' style='color: #554A6B; font-style: italic;'>No specific testamentary gifts or bequests specified.</p>";
+  } else {
+    sec5Html = "<p class='doc-section-text' style='color: #8C7B1E; font-style: italic;'>[Specific gifts have not yet been addressed.]</p>";
+  }
+
+  // Section 6: Additional Wishes
+  let sec6Html = "";
+  if (state.additional_wishes) {
+    sec6Html = `<p class="doc-section-text">${escapeHtml(state.additional_wishes)}</p>`;
+  } else if (state.wishes_addressed) {
+    sec6Html = "<p class='doc-section-text' style='color: #554A6B; font-style: italic;'>No additional funeral, testamentary, or personal wishes specified.</p>";
+  } else {
+    sec6Html = "<p class='doc-section-text' style='color: #8C7B1E; font-style: italic;'>[Additional wishes have not yet been addressed.]</p>";
+  }
+
+  // Section 7: Clarifications if any
+  let sec7Html = "";
+  if (state.needs_clarification && Object.keys(state.needs_clarification).length > 0) {
+    const items = Object.entries(state.needs_clarification)
+      .map(([k, v]) => `<li><strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}</li>`)
+      .join("");
+    sec7Html = `
+      <div class="doc-clarifications-alert">
+        <div class="doc-clarifications-title">⚠️ Outstanding Items Requiring Clarification</div>
+        <ul class="doc-clarifications-list">
+          ${items}
+        </ul>
+      </div>
+    `;
+  }
+
+  els.documentFormattedView.innerHTML = `
+    <header class="doc-legal-header">
+      <div class="doc-legal-brand-row">
+        <span class="doc-brand-tag">Wenup<span class="dot"></span></span>
+        <span class="doc-category-badge">Legal Intake Instrument</span>
+      </div>
+      <h2 class="doc-main-title">Personal Wishes Draft Document</h2>
+      <div class="doc-sub-date">Prepared on ${formattedDate} • Confidential Working Draft</div>
+
+      <div class="doc-meta-card">
+        <div class="doc-meta-item">
+          <span class="doc-meta-label">Testator</span>
+          <span class="doc-meta-value">${escapeHtml(testatorName)}</span>
+        </div>
+        <div class="doc-meta-item">
+          <span class="doc-meta-label">Residence</span>
+          <span class="doc-meta-value" style="font-size: 12px; font-weight: 500;">${escapeHtml(homeAddress)}</span>
+        </div>
+        <div class="doc-meta-item">
+          <span class="doc-meta-label">Review Status</span>
+          <span class="doc-meta-value" style="color: #116832;">Draft for Solicitor Review</span>
+        </div>
+      </div>
+
+      <div class="doc-notice-banner">
+        <strong>DEMONSTRATION ONLY:</strong> This fictional document was drafted via the Wenup Conversational Intake Assistant for testing and review purposes. It does not constitute formal legal advice.
+      </div>
+    </header>
+
+    <main class="doc-legal-body">
+      <!-- Section 1: Declaration -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">1.0</span>
+          <h3 class="doc-section-title">Declaration &amp; Testamentary Domicile</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        <p class="doc-section-text">${sec1}</p>
+      </section>
+
+      <!-- Section 2: Jurisdiction Scope -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">2.0</span>
+          <h3 class="doc-section-title">Scope of Testamentary Jurisdiction</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        <p class="doc-section-text">${sec2}</p>
+      </section>
+
+      <!-- Section 3: Beneficiaries & Children -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">3.0</span>
+          <h3 class="doc-section-title">Family &amp; Beneficiaries</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        <p class="doc-section-text">${sec3}</p>
+      </section>
+
+      <!-- Section 4: Executor -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">4.0</span>
+          <h3 class="doc-section-title">Appointment of Executor &amp; Fiduciary</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        <p class="doc-section-text">${sec4}</p>
+      </section>
+
+      <!-- Section 5: Specific Gifts -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">5.0</span>
+          <h3 class="doc-section-title">Specific Gifts &amp; Bequests</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        ${sec5Html}
+      </section>
+
+      <!-- Section 6: Additional Wishes -->
+      <section class="doc-section">
+        <div class="doc-section-header">
+          <span class="doc-section-number">6.0</span>
+          <h3 class="doc-section-title">Personal &amp; Funeral Wishes</h3>
+          <span class="doc-section-line"></span>
+        </div>
+        ${sec6Html}
+      </section>
+
+      ${sec7Html}
+
+      <!-- Attestation & Signature Execution Block -->
+      <section class="doc-attestation-block">
+        <h3 class="doc-attestation-title">Attestation &amp; Formal Execution</h3>
+        <p class="doc-attestation-clause">
+          IN WITNESS WHEREOF, the Testator has executed this draft Personal Wishes Document on the date indicated below, confirming that this instrument accurately embodies their testamentary intentions for formal solicitor review.
+        </p>
+
+        <div class="doc-testator-sign-grid">
+          <div class="doc-sign-line-wrap">
+            <div class="doc-sign-line"></div>
+            <span class="doc-sign-label">Signature of Testator (${escapeHtml(testatorName)})</span>
+          </div>
+          <div class="doc-sign-line-wrap">
+            <div class="doc-sign-line"></div>
+            <span class="doc-sign-label">Date</span>
+          </div>
+        </div>
+
+        <div class="doc-witnesses-grid">
+          <div class="doc-witness-box">
+            <span class="doc-witness-title">First Witness Attestation</span>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Signature</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Full Name &amp; Occupation</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Residential Address</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+          </div>
+
+          <div class="doc-witness-box">
+            <span class="doc-witness-title">Second Witness Attestation</span>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Signature</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Full Name &amp; Occupation</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+            <div class="doc-witness-field">
+              <span class="doc-witness-field-label">Residential Address</span>
+              <div class="doc-witness-field-line"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  `;
 }
 
 // ---------- Formal Legal PDF Document Generator with Precision Borders ----------

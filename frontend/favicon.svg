@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="wenupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D006B" />
+      <stop offset="100%" stop-color="#140030" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#wenupGrad)" />
+  <text x="14" y="47" font-family="'Fraunces', Georgia, serif" font-size="44" font-weight="700" fill="#FFFFFF" letter-spacing="-1">W</text>
+  <circle cx="50" cy="17" r="6.5" fill="#E2F832" />
+</svg>

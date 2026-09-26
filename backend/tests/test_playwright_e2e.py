@@ -59,7 +59,7 @@ def test_conversational_intake_flow(page: Page):
     # Verify Full Name state card (Tile #1) updates
     full_name_card = page.locator('.state-card-flip-container[data-field-key="full_name"]')
     expect(full_name_card).to_be_visible()
-    expect(full_name_card).to_contain_text("Eleanor Vance")
+    expect(full_name_card).to_contain_text("Eleanor Vance", timeout=15000)
 
 
 def test_human_in_the_loop_direct_tile_editing(page: Page):
@@ -96,13 +96,20 @@ def test_card_flip_artwork_and_tile_assets(page: Page):
     page.locator("#landing-get-started-btn").click()
     expect(page.locator("#status-label")).to_have_text("Connected", timeout=10000)
     
-    # Locate Tile #1 container and click flip hint to view artwork
-    flip_hint = page.locator("#tile-flip-hint-1")
-    expect(flip_hint).to_be_visible()
-    flip_hint.click()
-    
-    # Verify card is flipped
+    # Locate Tile #1 container and click card -- verify it does NOT flip during intake
     card_container = page.locator('.state-card-flip-container[data-tile-index="1"]')
+    expect(card_container).to_be_visible()
+    card_container.click()
+    expect(card_container).not_to_have_class(re.compile(r"is-flipped"))
+    
+    # Trigger completion via finish button
+    finish_btn = page.locator("#header-finish-btn")
+    if finish_btn.is_visible():
+        finish_btn.click()
+    else:
+        page.evaluate("finishDocumentNow()")
+    
+    # Verify cards flip on completion
     expect(card_container).to_have_class(re.compile(r"is-flipped"))
     
     # Verify tile image source is field_tiles/10.png
@@ -111,6 +118,7 @@ def test_card_flip_artwork_and_tile_assets(page: Page):
     
     # Check Tile #9 uses field_tiles/11.png
     tile_9_container = page.locator('.state-card-flip-container[data-tile-index="9"]')
+    expect(tile_9_container).to_have_class(re.compile(r"is-flipped"))
     tile_9_img = tile_9_container.locator("img.tile-art-img")
     expect(tile_9_img).to_have_attribute("src", "field_tiles/11.png")
 

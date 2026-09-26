@@ -20,16 +20,17 @@
       "dest": "/frontend/field_tiles/$1"
     },
     {
-      "src": "/(style\\.css|app\\.js|jspdf\\.umd\\.min\\.js|wenupbg\\.png|check_br\\.png|favicon\\.ico)",
-      "dest": "/frontend/$1"
+      "src": "/(getstarted|getstarted\\.html)",
+      "dest": "/frontend/index.html"
     },
     {
-      "src": "/",
+      "src": "/(index\\.html)?",
       "dest": "/frontend/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/frontend/$1"
     }
   ]
 }
+
