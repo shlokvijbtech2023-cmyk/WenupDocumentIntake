@@ -436,10 +436,11 @@ function downloadDocumentAsPdf() {
   const fileName = `Personal_Wishes_Document_${safeName}.pdf`;
 
   // 1. Generate via jsPDF if available
-  if (window.jspdf && window.jspdf.jsPDF) {
+  const jsPdfClass = window.jspdf?.jsPDF || window.jsPDF || (typeof jsPDF !== "undefined" ? jsPDF : null);
+
+  if (jsPdfClass) {
     try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
+      const doc = new jsPdfClass({
         orientation: "portrait",
         unit: "pt",
         format: "a4"
@@ -874,16 +875,25 @@ if (els.downloadDocBtn) {
 
 // Reset Session Button
 async function resetSession() {
-  if (!sessionId) return;
-  const confirmed = confirm("Are you sure you want to discard this intake session and start fresh? All in-memory state will be cleared.");
-  if (!confirmed) return;
+  const oldSid = sessionId;
+  sessionId = null;
+  latestState = null;
+  lastDocumentContent = "";
+  manualFlippedCards.clear();
+  globalForceFlipMode = null;
+  if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
+  if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";
 
-  try {
-    await fetch(`${API_BASE}/api/session/${sessionId}/reset`, { method: "POST" });
-  } catch (err) {
-    // proceed anyway
+  if (oldSid) {
+    try {
+      await fetch(`${API_BASE}/api/session/${oldSid}/reset`, { method: "POST" });
+    } catch (err) {
+      console.warn("Session reset network notification error:", err);
+    }
   }
-  startSession();
+
+  await startSession();
+  addSystemNote("✨ Started over with a fresh intake session.");
 }
 
 if (els.resetBtn) {
