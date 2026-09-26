@@ -103,6 +103,7 @@ def test_concurrency_1_same_session_serialization():
     With an injected delay, the total time must be approximately 2x delay."""
     resp = client.post("/api/session")
     session_id = resp.json()["session_id"]
+    client.post(f"/api/session/{session_id}/message", json={"message": "Jonathan Smith"})
 
     delay_seconds = 0.08  # 80ms artificial delay
     original_process_turn = main_module.process_turn
@@ -111,16 +112,11 @@ def test_concurrency_1_same_session_serialization():
         time.sleep(delay_seconds)
         return original_process_turn(session, text, llm)
 
-    messages = [
-        "Jonathan Smith",
-        "42 Park Road, London",
-    ]
-
     start = time.perf_counter()
     with patch("app.main.process_turn", side_effect=delayed_process_turn):
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            f1 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": messages[0]}))
-            f2 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": messages[1]}))
+            f1 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "42 Park Road, London"}))
+            f2 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "yes"}))
             r1 = f1.result()
             r2 = f2.result()
 
@@ -135,6 +131,7 @@ def test_concurrency_1_same_session_serialization():
     final_state = client.get(f"/api/session/{session_id}/state").json()
     assert final_state["full_name"] == "Jonathan Smith"
     assert final_state["home_address"] == "42 Park Road, London"
+    assert final_state["covers_worldwide_assets"] is True
 
 
 def test_concurrency_2_different_sessions_remain_parallel():
