@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-# Add project root and backend directory to sys.path so all imports resolve seamlessly
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# Add project root and backend directory to sys.path
+ROOT_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = ROOT_DIR / "backend"
 
 if str(ROOT_DIR) not in sys.path:

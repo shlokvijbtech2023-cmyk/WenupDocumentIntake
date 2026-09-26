@@ -181,9 +181,15 @@ def reset_session(session_id: str) -> dict:
     return {"status": "ok", "message": "Session data cleared successfully"}
 
 
-# Serve the static frontend from the same process, so `uvicorn backend.app.main:app`
-# or `cd backend && uvicorn app.main:app` works seamlessly.
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
-if _FRONTEND_DIR.exists():
+# Serve the static frontend from the same process, so `uvicorn backend.app.main:app`,
+# `cd backend && uvicorn app.main:app`, or Vercel serverless works seamlessly.
+_CANDIDATE_DIRS = [
+    Path(__file__).resolve().parent.parent.parent / "frontend",
+    Path.cwd() / "frontend",
+    Path(__file__).resolve().parent.parent / "frontend",
+]
+_FRONTEND_DIR = next((d for d in _CANDIDATE_DIRS if d.exists()), None)
+if _FRONTEND_DIR:
     app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
+
 
