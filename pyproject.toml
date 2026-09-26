@@ -1,2 +1,22 @@
+[project]
+name = "wenup-document-intake"
+version = "0.1.0"
+description = "Wenup Document Intake Assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.9.0",
+    "openai>=1.51.0",
+    "google-genai>=1.41.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3.0",
+    "httpx>=0.28.1",
+]
+
 [tool.vercel]
 entrypoint = "backend.app.main:app"
