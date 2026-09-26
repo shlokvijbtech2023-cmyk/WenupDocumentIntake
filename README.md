@@ -14,6 +14,7 @@
 [![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
 
 **Deployed Live on Vercel:** [https://wenup-document-intake.vercel.app/](https://wenup-document-intake.vercel.app/)
+**Demo Video:** https://drive.google.com/file/d/1Sqedx4Tt-HzEVv2eWN5zQTVhu0FQqZVG/view?usp=sharing
 
 ---
 
@@ -205,7 +206,8 @@ GEMINI_MODEL=gemini-2.5-pro
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
-
+OR WATCH THE DEMO VIDEO: **Demo Video:** https://drive.google.com/file/d/1Sqedx4Tt-HzEVv2eWN5zQTVhu0FQqZVG/view?usp=sharing
+OR VIEW DIRECTLY: **Deployed Live on Vercel:** [https://wenup-document-intake.vercel.app/](https://wenup-document-intake.vercel.app/)
 ---
 
 ## 🧪 Running Automated Tests
