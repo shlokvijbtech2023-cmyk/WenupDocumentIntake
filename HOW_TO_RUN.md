@@ -145,6 +145,23 @@ Two formatted Microsoft Word documents with embedded screenshots and tables are 
 
 ---
 
+## 🌐 Deploying to Vercel (Cloud Hosting)
+
+The repository is pre-configured with Vercel deployment files:
+* `vercel.json`: Route rewrites for `/api/*` to the serverless function and `/*` to the static frontend.
+* `requirements.txt`: Root Python dependency manifest for Vercel's Python runtime.
+* `api/index.py`: Serverless ASGI entrypoint for FastAPI.
+* `.vercelignore`: Ignores `.venv` and local binaries to ensure fast, lightweight serverless deployments.
+
+### Deployment Steps:
+1. Push your repository to GitHub.
+2. In the [Vercel Dashboard](https://vercel.com), click **Add New Project** and select this repository.
+3. Keep default settings (Framework: **Other**, Root: `./`).
+4. (Optional) In **Environment Variables**, add `OPENAI_API_KEY` or `GEMINI_API_KEY` if you wish to use live LLMs.
+5. Click **Deploy**.
+
+---
+
 ## 🔧 Troubleshooting & FAQs
 
 ### Port 8000 Already in Use

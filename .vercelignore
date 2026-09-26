@@ -1,0 +1,12 @@
+.venv
+backend/.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+*.docx
+*.pdf
+.git
+.DS_Store
+docs/evidence/test-runs
+docs/evidence/experiments

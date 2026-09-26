@@ -1,11 +1,16 @@
+<p align="center">
+  <img src="docs/overview.png" alt="Wenup Document Intake Assistant Overview" width="100%" />
+</p>
+
 # Wenup Document Intake Assistant
 
 **Engineering Evaluation Submission**  
 *A reliable, privacy-first conversational legal intake assistant powered by a hybrid deterministic-LLM architecture.*
 
-[![Test Suite](https://img.shields.io/badge/Tests-101%20Passed%20(100%25)-brightgreen.svg)]()
+[![Test Suite](https://img.shields.io/badge/Tests-112%20Passed%20(100%25)-brightgreen.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)]()
+[![Vercel Ready](https://img.shields.io/badge/Vercel-Deployable-black.svg?logo=vercel)]()
 [![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
 
 ---
@@ -51,8 +56,8 @@
 
 ### 1. Clone & Set Up Python Environment
 ```bash
-git clone https://github.com/shlokvij/WenupTechnicalTest.git
-cd WenupTechnicalTest/backend
+git clone https://github.com/shlokvijbtech2023-cmyk/WenupDocumentIntake.git
+cd WenupDocumentIntake/backend
 
 # Create and activate virtual environment
 python3 -m venv .venv
@@ -79,6 +84,20 @@ GEMINI_MODEL=gemini-2.5-pro
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+
+---
+
+## 🌐 Deploy to Vercel
+
+The repository includes complete zero-configuration Vercel deployment support (`vercel.json`, root `requirements.txt`, and serverless function entrypoint `api/index.py`):
+
+1. **Import Repository in Vercel:**
+   - Connect your GitHub repository to [Vercel](https://vercel.com).
+   - Leave **Framework Preset** as **Other** (Root Directory: `./`).
+2. **Environment Variables (Optional):**
+   - If using live LLMs, set `OPENAI_API_KEY` or `GEMINI_API_KEY` in Project Settings.
+   - If unset, the app runs gracefully in deterministic mock mode.
+3. **Deploy:** Click **Deploy**. Vercel will build the Python serverless API and serve the static frontend seamlessly.
 
 ---
 
