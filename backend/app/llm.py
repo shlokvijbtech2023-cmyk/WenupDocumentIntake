@@ -258,7 +258,7 @@ class MockLLMClient(LLMClient):
         new_next_field = temp_state.next_outstanding_field()
         ack = "Got it. " if updates else ""
         if new_next_field is None:
-            msg = f"{ack}Thanks -- I have everything I need for the draft document."
+            msg = f"{ack}Thanks -- I have everything I need for your draft document. Please review the 9 details recorded on the right to verify if everything is correct, or let me know if you'd like to make any edits."
         else:
             question = self.PROMPTS.get(new_next_field, "Could you tell me more?")
             msg = f"{ack}{question}"

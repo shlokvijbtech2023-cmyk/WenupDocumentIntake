@@ -32,7 +32,7 @@
     {
       "src": "/(.*\\.(?:css|js))",
       "headers": {
-        "cache-control": "public, max-age=86400, stale-while-revalidate=604800"
+        "cache-control": "no-cache, no-store, must-revalidate"
       },
       "dest": "/frontend/$1"
     },

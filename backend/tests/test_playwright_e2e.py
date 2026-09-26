@@ -147,3 +147,42 @@ def test_pdf_download_functionality(page: Page):
     assert "Personal_Wishes_Document" in download.suggested_filename
     assert download.suggested_filename.endswith(".pdf")
 
+
+def test_bulk_input_does_not_flip_until_verified(page: Page):
+    page.goto(BASE_URL)
+    page.locator("#landing-get-started-btn").click()
+    expect(page.locator("#status-label")).to_have_text("Connected", timeout=10000)
+
+    # Submit all 9 fields in a single comprehensive multi-field message
+    chat_input = page.locator("#chat-input")
+    bulk_message = (
+        "I am John Connor, living at 10 Downing Street, London. I have worldwide assets and "
+        "two children named Tim and May. My executor is my wife Sarah Connor. "
+        "Specific gifts: give my watch to James. Wishes: play jazz at my funeral."
+    )
+    chat_input.fill(bulk_message)
+    page.locator("#send-btn").click()
+
+    # Wait for assistant response asking to verify details
+    expect(page.locator(".chat-bubble.assistant").last).to_contain_text("review", timeout=15000)
+
+    # Verify that all 9 cards remain on the FRONT face (unflipped) showing their confirmed values
+    for i in range(1, 10):
+        card = page.locator(f'.state-card-flip-container[data-tile-index="{i}"]')
+        expect(card).to_be_visible()
+        expect(card).not_to_have_class(re.compile(r"is-flipped"))
+
+    # Quick chip for verification should now be visible
+    verified_chip = page.locator('.quick-chip:has-text("Everything is verified")')
+    expect(verified_chip).to_be_visible()
+
+    # Click the verification chip
+    verified_chip.click()
+    page.wait_for_timeout(600)
+
+    # Now verify all 9 cards flip to back art face
+    for i in range(1, 10):
+        card = page.locator(f'.state-card-flip-container[data-tile-index="{i}"]')
+        expect(card).to_have_class(re.compile(r"is-flipped"))
+
+

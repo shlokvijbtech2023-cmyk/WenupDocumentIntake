@@ -154,6 +154,14 @@ We designed an automated timing benchmark (`test_concurrency_1_same_session_seri
 
 ## 6. Multi-Layer Verification & Quality Confidence
 
-All concurrency scenarios, domain invariants, human state edits, and browser UI workflows are verified across **118 automated tests** (114 backend unit/integration tests + 4 Playwright E2E browser tests):
-* `pytest backend/tests/ -v` passes 100% (118 / 118 passed in 11.48s).
+All concurrency scenarios, domain invariants, human state edits, bulk input handling, and browser UI workflows are verified across **116 automated tests** (110 backend unit/integration tests + 6 Playwright E2E browser tests):
+* `pytest backend/tests/ -v` passes 100% (116 / 116 passed in 10.42s).
+
+---
+
+## 7. Explicit Verification State Machine & Production Caching Fixes
+
+* **Field Card Flip Gating:** Enforced strict multi-phase verification. When all 9 fields are filled from a multi-field or single prompt, all 9 field cards remain strictly on their front face with `Confirmed ✓` status so the user can review all extracted values.
+* **Verification Response Trigger:** Cards flip to illustrated artwork mode *only* after the assistant has prompted for verification and the user either clicks `"Everything is verified ✓"`, clicks `"Finish Document"`, or provides an explicit verification confirmation in a subsequent turn.
+* **Vercel CDN Cache-Busting:** Configured `no-cache, no-store, must-revalidate` headers for CSS and JS in `vercel.json` and bumped asset query strings (`?v=3.2.0`) in `index.html` to eliminate stale edge/browser caching on Vercel.
 

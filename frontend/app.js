@@ -78,6 +78,7 @@ let activeEditingField = null; // Key of field currently in human edit mode
 const manualFlippedCards = new Map(); // key -> boolean
 let globalForceFlipMode = null; // null (auto) | true (all art) | false (all data)
 let isVerifiedAndFinalized = false; // When all 9 fields are filled, cards stay on front until user verifies
+let awaitingVerification = false; // True once assistant has prompted user to verify all 9 completed fields
 
 // ---------- Status & Progress Utilities ----------
 
@@ -548,12 +549,12 @@ function renderStateCards(state, recentlyUpdated = []) {
     els.stateCardsGrid.appendChild(cardContainer);
   });
 
-  // Reveal Tab 1 & Tab 2 Completion cards when all 9 fields are done
+  // Reveal Tab 1 & Tab 2 Completion cards ONLY when intake is verified and finalized
   if (els.chatCompleteCard) {
-    els.chatCompleteCard.style.display = (allNineFilled || totalConfirmedCount >= 7) ? "flex" : "none";
+    els.chatCompleteCard.style.display = isVerifiedAndFinalized ? "flex" : "none";
   }
   if (els.tilesCompleteBanner) {
-    els.tilesCompleteBanner.style.display = allNineFilled ? "flex" : "none";
+    els.tilesCompleteBanner.style.display = isVerifiedAndFinalized ? "flex" : "none";
   }
 }
 
@@ -1224,6 +1225,8 @@ async function startSession() {
 async function sendMessage(text) {
   if (!sessionId || !text) return;
 
+  const wasAwaitingVerification = awaitingVerification;
+
   addMessage("user", text);
   currentTurnCount++;
   if (els.turnCounter) els.turnCounter.textContent = `Turn ${String(currentTurnCount).padStart(2, "0")}`;
@@ -1255,9 +1258,23 @@ async function sendMessage(text) {
     updateTelemetry(data, data.state);
     updateQuickChips(data.state);
 
-    const isVerificationWord = /\b(verified|looks good|ready|confirm|finalize|no edits|perfect|everything is verified)\b/i.test(text);
-    if (data.progress && data.progress.is_all_complete && isVerificationWord && !isVerifiedAndFinalized) {
-      finishDocumentNow();
+    const isAllCompleteNow = Boolean(data.progress && data.progress.is_all_complete);
+
+    if (!wasAwaitingVerification && isAllCompleteNow) {
+      // First turn where all 9 fields are completely populated: DO NOT FLIP CARDS!
+      // Assistant has now asked the user to review and verify their details.
+      awaitingVerification = true;
+      isVerifiedAndFinalized = false;
+    } else if (wasAwaitingVerification && isAllCompleteNow && !isVerifiedAndFinalized) {
+      // User was ALREADY presented with all 9 complete fields and asked to verify in a prior turn.
+      // Check if this new message is a confirmation / verification response.
+      const isVerificationMsg = /^(?:yes|yep|yeah|verified|looks good|all good|ready|confirm|confirmed|finalize|no edits|perfect|everything is verified|everything looks good|all correct|correct|proceed|finish|done)\b/i.test(text.trim()) || /\b(everything is verified|looks good to me|verified and ready|all details are correct|no changes)\b/i.test(text);
+
+      const hasCorrection = Array.isArray(data.applied_fields) && data.applied_fields.length > 0;
+
+      if (isVerificationMsg && !hasCorrection) {
+        finishDocumentNow();
+      }
     }
 
     if (data.clarifications && data.clarifications.length > 0) {
@@ -1282,6 +1299,7 @@ async function finishDocumentNow() {
 
   // Set verified & finalized and force all 9 cards to flip to Art mode
   isVerifiedAndFinalized = true;
+  awaitingVerification = false;
   globalForceFlipMode = true;
   manualFlippedCards.clear();
   activeEditingField = null;
@@ -1289,8 +1307,9 @@ async function finishDocumentNow() {
     renderStateCards(latestState);
   }
 
-  // Reveal Tab 1 complete card
+  // Reveal Tab 1 complete card & Tab 2 banner
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "flex";
+  if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "flex";
 
   addSystemNote("✨ Document finalized! All 9 confirmed fields are compiled into your draft Personal Wishes Document.");
 }
@@ -1400,6 +1419,7 @@ async function resetSession() {
   manualFlippedCards.clear();
   globalForceFlipMode = null;
   isVerifiedAndFinalized = false;
+  awaitingVerification = false;
   activeEditingField = null;
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
   if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";

@@ -124,4 +124,4 @@ def _fallback_question(session: SessionData) -> str:
     }
     if field:
         return prompts.get(field, "Could you tell me more about that?")
-    return "Thanks -- I have everything I need. Here's your draft document."
+    return "Thanks -- I have everything I need for your draft document. Please review the 9 details recorded on the right to verify if everything is correct, or let me know if you'd like to make any edits."
