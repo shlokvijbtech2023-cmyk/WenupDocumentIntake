@@ -6,7 +6,6 @@ __pycache__
 .pytest_cache
 *.docx
 *.pdf
-.git
 .DS_Store
 docs/evidence/test-runs
 docs/evidence/experiments
