@@ -115,8 +115,8 @@ def test_concurrency_1_same_session_serialization():
     start = time.perf_counter()
     with patch("app.main.process_turn", side_effect=delayed_process_turn):
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            f1 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "42 Park Road, London"}))
-            f2 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "yes"}))
+            f1 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "my address is 42 Park Road, London"}))
+            f2 = executor.submit(lambda: client.post(f"/api/session/{session_id}/message", json={"message": "worldwide assets: yes"}))
             r1 = f1.result()
             r2 = f2.result()
 

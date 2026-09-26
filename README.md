@@ -84,7 +84,7 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ## 🧪 Running Automated Tests
 
-The repository includes a comprehensive 101-test evaluation suite adhering to the **Evaluation Test Corpus**:
+The repository includes a comprehensive 112-test evaluation suite adhering to the **Evaluation Test Corpus**:
 
 ```bash
 cd backend
@@ -94,10 +94,11 @@ pytest -v
 
 ### Test Suite Summary:
 ```text
-============================= 101 passed in 0.49s ==============================
+============================= 112 passed in 0.50s ==============================
 - State & Domain Models:        7 / 7   PASSED
 - Schema & Validation Gating:   13 / 13 PASSED
 - Conversation Engine:          10 / 10 PASSED
+- Multi-Field Regression:       11 / 11 PASSED
 - Legal Template Generator:     5 / 5   PASSED
 - Session & Concurrency Lock:   10 / 10 PASSED
 - Evaluation Corpus (TC-001–58):26 / 26 PASSED
@@ -115,6 +116,7 @@ pytest -v
 
 | Document | Description | Target Read Time |
 |:---|:---|:---:|
+| **[TEST_CASES.md](TEST_CASES.md)** | **Comprehensive 152-Case QA Test Suite & Evaluation Matrix** | 4–5 mins |
 | **[DEVELOPMENT_JOURNEY.md](DEVELOPMENT_JOURNEY.md)** | Core engineering narrative: problem space, architecture, tradeoffs, bugs, privacy, production | 4–5 mins |
 | **[DECISION_LOG.md](DECISION_LOG.md)** | Architecture Decision Records (ADRs 001–007) | 3–4 mins |
 | **[docs/EXPERIMENT_REPORT.md](docs/EXPERIMENT_REPORT.md)** | 4 Empirical experiments comparing LLM vs Deterministic engines | 4–5 mins |

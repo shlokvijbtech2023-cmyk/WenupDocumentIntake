@@ -194,8 +194,20 @@ def validate_updates(result: ExtractionResult, current_state: IntakeState) -> Va
                                    reason="expected a list of strings")
                 )
                 continue
+        elif field == "additional_wishes":
+            if value is None or (isinstance(value, str) and not value.strip()):
+                outcome.applied.append(FieldUpdate(field="additional_wishes", value=""))
+                continue
+            if not isinstance(value, str):
+                outcome.rejected.append(
+                    RejectedUpdate(field=field, raw_value=value,
+                                   reason="expected text for additional wishes")
+                )
+                continue
+            value = value.strip()
+            low_val = value.lower()
         else:
-            # remaining fields are free-text strings
+            # remaining fields are free-text strings (full_name, home_address, executor.name, executor.relationship)
             if not isinstance(value, str) or not value.strip():
                 outcome.rejected.append(
                     RejectedUpdate(field=field, raw_value=value,
@@ -203,6 +215,42 @@ def validate_updates(result: ExtractionResult, current_state: IntakeState) -> Va
                 )
                 continue
             value = value.strip()
+            low_val = value.lower()
+
+            # Field-aware sanity checks to prevent obvious field mismatches
+            RELATIONSHIP_TERMS = {
+                "brother", "sister", "spouse", "wife", "husband", "friend",
+                "son", "daughter", "mother", "father", "partner", "solicitor",
+                "lawyer", "cousin", "uncle", "aunt", "close friend"
+            }
+            BOOLEAN_TERMS = {
+                "yes", "no", "y", "n", "true", "false", "none", "unknown",
+                "na", "n/a", "maybe", "not sure", "not provided"
+            }
+
+            if field == "full_name":
+                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS or len(value.strip()) < 2:
+                    outcome.rejected.append(
+                        RejectedUpdate(field=field, raw_value=value,
+                                       reason="relationship or boolean descriptor cannot be full_name")
+                    )
+                    continue
+            elif field == "executor.name":
+                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS or len(value.strip()) < 2:
+                    outcome.rejected.append(
+                        RejectedUpdate(field=field, raw_value=value,
+                                       reason="relationship or boolean descriptor cannot be executor.name")
+                    )
+                    continue
+            elif field == "home_address":
+                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS:
+                    outcome.rejected.append(
+                        RejectedUpdate(field=field, raw_value=value,
+                                       reason="relationship or boolean descriptor cannot be home_address")
+                    )
+                    continue
+            elif field == "executor.relationship":
+                value = low_val
 
         # Deterministic contradiction backstop against PRIOR confirmed
         # state (skipped for explicit corrections, which may overwrite

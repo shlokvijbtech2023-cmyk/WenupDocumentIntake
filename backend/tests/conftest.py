@@ -1,9 +1,13 @@
+import os
 import json
 import sys
 from pathlib import Path
 from typing import List
 
 import pytest
+
+# Ensure automated test suite runs deterministically and offline without API calls
+os.environ["LLM_PROVIDER"] = "mock"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 

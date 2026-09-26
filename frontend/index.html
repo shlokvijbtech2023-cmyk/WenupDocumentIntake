@@ -46,6 +46,13 @@
           <span class="status-label" id="status-label">Connecting…</span>
         </div>
 
+        <button class="icon-btn finish-doc-btn" id="header-finish-btn" title="Finalize intake and view document now" style="display: none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Finish Document</span>
+        </button>
+
         <button class="icon-btn secondary-btn" id="arch-modal-btn" title="View Architecture & Engineering Pipeline">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
@@ -160,15 +167,34 @@
           <div class="state-panel-intro">
             <div class="state-intro-text">
               <h3 class="sr-only" id="preview-heading">Structured State</h3>
-              <p>Canonical <code>IntakeState</code> schema — the single source of truth, maintained separately from conversational history.</p>
+              <p>Canonical <code>IntakeState</code> schema (3×3 Field Tiles) — tap any tile to flip between field data and illustrated artwork.</p>
             </div>
-            <div class="state-privacy-tag" title="Transient in-memory session only. Zero database persistence.">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              <span>Transient In-Memory</span>
+            <div class="state-actions-bar">
+              <button type="button" class="view-toggle-btn" id="toggle-flip-all-btn" title="Flip all 9 tiles between Art and Data view">
+                <span class="toggle-icon">🖼️</span>
+                <span id="toggle-flip-text">Flip All to Art</span>
+              </button>
+              <button type="button" class="finish-early-btn" id="state-finish-btn" title="Finish intake and view generated document now" style="display: none;">
+                <span>✨ Finish Document</span>
+              </button>
+              <div class="state-privacy-tag" title="Transient in-memory session only. Zero database persistence.">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Transient In-Memory</span>
+              </div>
             </div>
+          </div>
+
+          <div class="tiles-complete-banner" id="tiles-complete-banner" style="display: none;">
+            <div class="banner-left">
+              <span class="banner-icon">🎉</span>
+              <div class="banner-text">
+                <strong>All 9 Field Tiles Unlocked!</strong> Your Personal Wishes Document is fully drafted.
+              </div>
+            </div>
+            <button type="button" class="banner-action-btn" id="banner-view-doc-btn">View Final Document →</button>
           </div>
 
           <div class="state-cards-grid" id="state-cards-grid"></div>
