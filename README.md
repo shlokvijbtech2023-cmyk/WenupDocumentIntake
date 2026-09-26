@@ -117,6 +117,10 @@ The UI features a 3×3 interactive card grid where confirmed field data flips to
 
 ### 🏛️ Phase 5: Final Production Architecture
 
+<p align="center">
+  <img src="docs/architecture_diagram.png" alt="Wenup System Architecture Diagram" width="100%" />
+</p>
+
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      FRONTEND (Vanilla HTML/CSS/JS)                    │
