@@ -14,7 +14,7 @@
 [![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
 
 ---
-
+DEPLOYED IN VERCEL: https://wenup-document-intake.vercel.app/
 ## 🏛️ System Architecture
 
 ```
@@ -51,7 +51,7 @@
 * ⚡ **Automatic Provider Fallback:** Primary providers (OpenAI, Gemini) seamlessly cascade to a local deterministic mock engine on network timeouts, auth failures, or rate limits, complete with telemetry provenance.
 
 ---
-
+## Open Directly (Deployed in Vercel): https://wenup-document-intake.vercel.app/
 ## 🚀 Quick Start & Running Locally
 
 ### 1. Clone & Set Up Python Environment
