@@ -227,19 +227,49 @@ def validate_updates(result: ExtractionResult, current_state: IntakeState) -> Va
                 "yes", "no", "y", "n", "true", "false", "none", "unknown",
                 "na", "n/a", "maybe", "not sure", "not provided"
             }
+            INVALID_EXECUTOR_NAMES = {
+                "no one", "nobody", "no-one", "none", "nil", "na", "n/a", "no", "nope",
+                "myself", "me", "i don't have one", "dont have one", "no executor",
+                "have no one", "have no executor", "not sure", "unknown", "skip",
+                "no body", "not anyone", "anyone", "someone", "i dont have one",
+                "i dont have an executor", "i don't have an executor", "i have no one",
+                "i have no executor", "there is no one", "there's no one", "nobody yet",
+                "no one yet"
+            }
+            INVALID_FULL_NAMES = {
+                "no one", "nobody", "none", "nil", "na", "n/a", "no", "yes", "true", "false",
+                "skip", "unknown", "not sure", "me", "myself"
+            }
 
             if field == "full_name":
-                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS or len(value.strip()) < 2:
+                # Clean accidental trailing conjunctions if an LLM returned a compound phrase in full_name
+                import re
+                cleaned_name = re.split(
+                    r"[,.;\n]|\s+(?:and\s+i|and\s+my|and\s+have|and\s+want|and\s+would|and\s+please|and\s+also|and\s+i'd|and\s+i'm|actually|i\s+live|live\s+at|i\s+have|who\s+is|whose|my\s+executor|executor\s+is|my\s+brother|my\s+sister|specific\b|wishes\b|gifts?\b|want\s+to\b|like\s+to\b|gift\b|give\b|leave\b)\b",
+                    value,
+                    flags=re.IGNORECASE,
+                )[0].strip(" .,;:-")
+                if cleaned_name and len(cleaned_name) >= 2:
+                    value = cleaned_name
+                    low_val = value.lower()
+
+                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS or low_val in INVALID_FULL_NAMES or len(value.strip()) < 2:
                     outcome.rejected.append(
                         RejectedUpdate(field=field, raw_value=value,
-                                       reason="relationship or boolean descriptor cannot be full_name")
+                                       reason="relationship, boolean descriptor, or refusal cannot be full_name")
                     )
                     continue
             elif field == "executor.name":
-                if low_val in RELATIONSHIP_TERMS or low_val in BOOLEAN_TERMS or len(value.strip()) < 2:
+                if (
+                    low_val in INVALID_EXECUTOR_NAMES
+                    or low_val in RELATIONSHIP_TERMS
+                    or low_val in BOOLEAN_TERMS
+                    or len(value.strip()) < 2
+                    or any(term in low_val for term in ("no one", "no-one", "nobody", "no executor", "dont have", "don't have", "have no one", "have no executor"))
+                ):
                     outcome.rejected.append(
                         RejectedUpdate(field=field, raw_value=value,
-                                       reason="relationship or boolean descriptor cannot be executor.name")
+                                       reason="An executor is mandatory to administer the estate; 'no one' or refusal is not a valid executor name")
                     )
                     continue
             elif field == "home_address":

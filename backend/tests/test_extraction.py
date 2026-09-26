@@ -134,3 +134,26 @@ def test_first_time_value_is_never_treated_as_contradiction():
     outcome = validate_updates(result, IntakeState())
     assert len(outcome.applied) == 1
     assert outcome.clarifications == []
+
+
+def test_executor_refusal_is_rejected_in_validation():
+    """Values like 'no one', 'nobody', 'none', 'I don't have one' are rejected as executor names."""
+    for bad_name in ("no one", "nobody", "none", "I don't have an executor", "skip", "nil"):
+        result = ExtractionResult(updates=[
+            FieldUpdate(field="executor.name", value=bad_name, status="set"),
+        ])
+        outcome = validate_updates(result, IntakeState())
+        assert len(outcome.applied) == 0
+        assert len(outcome.rejected) == 1
+        assert "mandatory" in outcome.rejected[0].reason.lower()
+
+
+def test_full_name_cleans_trailing_conjunction_clauses():
+    """If model outputs 'Shlok and I want to gift a car' into full_name, validation cleans it to 'Shlok'."""
+    result = ExtractionResult(updates=[
+        FieldUpdate(field="full_name", value="Shlok and I want to gift a car", status="set"),
+    ])
+    outcome = validate_updates(result, IntakeState())
+    assert len(outcome.applied) == 1
+    assert outcome.applied[0].value == "Shlok"
+

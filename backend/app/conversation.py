@@ -88,6 +88,25 @@ def process_turn(session: SessionData, user_message: str, client: LLMClient) -> 
         session.state.needs_clarification[clarification.field] = note
 
     assistant_message = result.assistant_message.strip() or _fallback_question(session)
+
+    # Invariant backstop: An executor is mandatory. If executor.name is missing, never ask for relationship.
+    # If the user expressed they have no executor or the update was rejected, explain that an executor is mandatory.
+    last_user_low = user_message.lower().strip()
+    is_evading_executor = any(w in last_user_low for w in (
+        "no one", "no-one", "nobody", "there is no one", "there is nobody",
+        "there's no one", "there's nobody", "no executor", "have no one",
+        "dont have anyone", "don't have anyone", "dont have an executor",
+        "don't have an executor", "i have no one", "i have no executor",
+        "i dont have anyone", "i don't have anyone", "i dont have an executor",
+        "i don't have an executor"
+    )) or (last_user_low in ("none", "no one", "nobody", "n/a", "na", "no body", "no") and session.state.next_outstanding_field() in ("executor.name", "executor.relationship"))
+
+    if not session.state.is_field_set("executor.name"):
+        if is_evading_executor or any(r.reason and "mandatory" in r.reason.lower() for r in outcome.rejected):
+            assistant_message = "It is mandatory that there should be an executor appointed to administer your estate (such as a trusted family member, friend, or a professional solicitor). Who would you like to appoint as your executor?"
+        elif "relationship" in assistant_message.lower() and not session.state.is_field_set("executor.name"):
+            assistant_message = "Who would you like to appoint as your executor?"
+
     session.history.append(Turn(role="assistant", content=assistant_message))
     session.revision += 1
     session.updated_at = time.time()
