@@ -27,7 +27,9 @@ const els = {
   archModalBtn: document.getElementById("arch-modal-btn"),
   archModal: document.getElementById("arch-modal"),
   closeArchModalBtn: document.getElementById("close-arch-modal-btn"),
-  closeModalFooterBtn: document.getElementById("close-modal-footer-btn"),
+  // Landing Splash Screen
+  landingScreen: document.getElementById("landing-screen"),
+  landingGetStartedBtn: document.getElementById("landing-get-started-btn"),
 
   // Tab 1 Chat Completion Card & Buttons
   chatCompleteCard: document.getElementById("chat-complete-card"),
@@ -35,8 +37,6 @@ const els = {
   chatViewDocBtn: document.getElementById("chat-view-doc-btn"),
 
   // 3x3 Tile Controls & Finish Options
-  toggleFlipAllBtn: document.getElementById("toggle-flip-all-btn"),
-  toggleFlipText: document.getElementById("toggle-flip-text"),
   stateFinishBtn: document.getElementById("state-finish-btn"),
   headerFinishBtn: document.getElementById("header-finish-btn"),
   tilesCompleteBanner: document.getElementById("tiles-complete-banner"),
@@ -53,16 +53,17 @@ const els = {
   telemetryJsonRaw: document.getElementById("telemetry-json-raw"),
 };
 
+// Field metadata: Tiles 1 to 8 point to 10.png, Tile 9 points to 11.png
 const FIELD_METADATA = [
-  { key: "full_name", tileIndex: 1, label: "Full Name", icon: "👤", desc: "Testator's legal full name", image: "/field_tiles/1.png" },
-  { key: "home_address", tileIndex: 2, label: "Home Address", icon: "🏠", desc: "Residential address", image: "/field_tiles/2.png" },
-  { key: "covers_worldwide_assets", tileIndex: 3, label: "Worldwide Assets", icon: "🌍", desc: "Scope of asset coverage", image: "/field_tiles/3.png" },
-  { key: "has_children", tileIndex: 4, label: "Has Children", icon: "👶", desc: "Parental status", image: "/field_tiles/4.png" },
-  { key: "children_names", tileIndex: 5, label: "Children's Names", icon: "👥", desc: "Named beneficiaries (if applicable)", image: "/field_tiles/5.png" },
-  { key: "executor.name", tileIndex: 6, label: "Executor Name", icon: "⚖️", desc: "Appointed legal representative", image: "/field_tiles/6.png" },
-  { key: "executor.relationship", tileIndex: 7, label: "Executor Relationship", icon: "🤝", desc: "Relationship to testator", image: "/field_tiles/7.png" },
-  { key: "specific_gifts", tileIndex: 8, label: "Specific Gifts", icon: "🎁", desc: "Designated personal bequests", image: "/field_tiles/8.png" },
-  { key: "additional_wishes", tileIndex: 9, label: "Additional Wishes", icon: "📝", desc: "Funeral or personal wishes", image: "/field_tiles/9.png" },
+  { key: "full_name", tileIndex: 1, label: "Full Name", icon: "👤", desc: "Testator's legal full name", image: "field_tiles/10.png" },
+  { key: "home_address", tileIndex: 2, label: "Home Address", icon: "🏠", desc: "Residential address", image: "field_tiles/10.png" },
+  { key: "covers_worldwide_assets", tileIndex: 3, label: "Worldwide Assets", icon: "🌍", desc: "Scope of asset coverage", image: "field_tiles/10.png" },
+  { key: "has_children", tileIndex: 4, label: "Has Children", icon: "👶", desc: "Parental status", image: "field_tiles/10.png" },
+  { key: "children_names", tileIndex: 5, label: "Children's Names", icon: "👥", desc: "Named beneficiaries (if applicable)", image: "field_tiles/10.png" },
+  { key: "executor.name", tileIndex: 6, label: "Executor Name", icon: "⚖️", desc: "Appointed legal representative", image: "field_tiles/10.png" },
+  { key: "executor.relationship", tileIndex: 7, label: "Executor Relationship", icon: "🤝", desc: "Relationship to testator", image: "field_tiles/10.png" },
+  { key: "specific_gifts", tileIndex: 8, label: "Specific Gifts", icon: "🎁", desc: "Designated personal bequests", image: "field_tiles/10.png" },
+  { key: "additional_wishes", tileIndex: 9, label: "Additional Wishes", icon: "📝", desc: "Funeral or personal wishes", image: "field_tiles/11.png" },
 ];
 
 let sessionId = null;
@@ -70,6 +71,7 @@ let currentTurnCount = 0;
 let lastDocumentContent = "";
 let latestState = null;
 let latestProgress = null;
+let activeEditingField = null; // Key of field currently in human edit mode
 
 // Track individual card flip preferences (overrides auto)
 const manualFlippedCards = new Map(); // key -> boolean
@@ -112,7 +114,7 @@ function updateProgress(progress) {
 function setInputEnabled(enabled) {
   if (els.chatInput) els.chatInput.disabled = !enabled;
   if (els.sendBtn) els.sendBtn.disabled = !enabled;
-  if (enabled && els.chatInput) {
+  if (enabled && els.chatInput && (!els.landingScreen || els.landingScreen.classList.contains("landing-hidden"))) {
     els.chatInput.focus();
   }
 }
@@ -166,7 +168,7 @@ function removeTypingIndicator() {
   if (indicator) indicator.remove();
 }
 
-// ---------- Context-Aware Quick Suggestion Chips (Clean & Generic) ----------
+// ---------- Context-Aware Quick Suggestion Chips ----------
 
 function updateQuickChips(state) {
   if (!els.quickChipsWrapper) return;
@@ -186,9 +188,9 @@ function updateQuickChips(state) {
       chips.push("Brother", "Sister", "Spouse", "Son", "Daughter", "Friend", "Solicitor");
     }
   } else if (!state.full_name) {
-    // No random fake names -- user provides their own name
+    // Let user enter their legal name
   } else if (!state.home_address) {
-    // No random fake addresses -- user provides their own address
+    // Let user enter their address
   } else if (state.covers_worldwide_assets === null) {
     chips.push("Yes, cover worldwide assets", "No, UK assets only");
   } else if (state.has_children === null) {
@@ -196,7 +198,7 @@ function updateQuickChips(state) {
   } else if (state.has_children === true && (!state.children_names || state.children_names.length === 0)) {
     chips.push("None");
   } else if (!state.executor?.name) {
-    // No random fake executor names -- user provides their executor's name
+    // User provides executor name
   } else if (!state.executor?.relationship) {
     chips.push("Brother", "Sister", "Spouse", "Son", "Daughter", "Friend", "Solicitor");
   } else if (!state.gifts_addressed) {
@@ -230,7 +232,7 @@ function updateQuickChips(state) {
   });
 }
 
-// ---------- Structured State Grid & 3D Card Flip Rendering ----------
+// ---------- Structured State Grid & Human-in-the-Loop Direct Editing ----------
 
 function formatFieldValue(val) {
   if (val === null || val === undefined || val === "") return null;
@@ -251,6 +253,49 @@ function isFieldConfirmed(metaKey, rawVal, state, flagged) {
     return Boolean(state.wishes_addressed || rawVal);
   }
   return rawVal !== null && rawVal !== undefined && rawVal !== "";
+}
+
+async function saveFieldDirectly(fieldKey, newValue) {
+  if (!sessionId) {
+    addSystemNote("⚠️ Please wait for session initialization before editing.", true);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/session/${sessionId}/state`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ field: fieldKey, value: newValue }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.detail || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    activeEditingField = null;
+    latestState = data.state;
+    renderStateCards(data.state, [fieldKey]);
+    renderDocument(data.document);
+    updateProgress(data.progress);
+    updateQuickChips(data.state);
+    updateTelemetry({
+      llm_provider_used: "human-edit (direct intervention)",
+      revision: data.revision,
+      core_complete: data.core_complete,
+      applied_fields: [fieldKey],
+      clarifications: [],
+      rejected_fields: [],
+    }, data.state);
+
+    const fieldMeta = FIELD_METADATA.find(m => m.key === fieldKey);
+    const label = fieldMeta ? fieldMeta.label : fieldKey;
+    addSystemNote(`✏️ Updated ${label}: "${formatFieldValue(newValue) || 'Saved'}"`);
+  } catch (err) {
+    console.error("Failed to save edited field:", err);
+    addSystemNote(`⚠️ Failed to update field: ${err.message}`, true);
+  }
 }
 
 function renderStateCards(state, recentlyUpdated = []) {
@@ -298,6 +343,7 @@ function renderStateCards(state, recentlyUpdated = []) {
     const isClarify = Boolean(flagged[meta.key]);
     const isUpdated = recentlyUpdated.includes(meta.key);
     const confirmed = isFieldConfirmed(meta.key, rawVal, state, flagged);
+    const isEditing = activeEditingField === meta.key;
 
     let statusType = "pending";
     let statusText = "Pending ◯";
@@ -327,13 +373,13 @@ function renderStateCards(state, recentlyUpdated = []) {
 
     // Determine whether card is flipped to back face (showing illustrated artwork tile)
     let shouldBeFlipped = false;
-    if (globalForceFlipMode !== null) {
+    if (isEditing) {
+      shouldBeFlipped = false; // Always show front face when editing
+    } else if (globalForceFlipMode !== null) {
       shouldBeFlipped = globalForceFlipMode;
     } else if (manualFlippedCards.has(meta.key)) {
       shouldBeFlipped = manualFlippedCards.get(meta.key);
     } else {
-      // When all 9 fields are completed, ALL 9 turn to show their cards 1 - 9!
-      // Or auto flip once individually confirmed
       shouldBeFlipped = allNineFilled || confirmed;
     }
 
@@ -341,50 +387,182 @@ function renderStateCards(state, recentlyUpdated = []) {
     cardContainer.className = `state-card-flip-container ${shouldBeFlipped ? "is-flipped" : ""} ${isUpdated ? "highlight-update" : ""}`;
     cardContainer.dataset.fieldKey = meta.key;
     cardContainer.dataset.tileIndex = meta.tileIndex;
-    cardContainer.title = shouldBeFlipped ? "Click to view field data" : "Click to view illustrated tile artwork";
+    cardContainer.title = isEditing ? "Editing field value" : (shouldBeFlipped ? "Click to view field data" : "Click to view illustrated tile artwork");
+
+    // Construct Front Face Content (either view mode or edit mode)
+    let frontBodyHtml = "";
+    if (isEditing) {
+      if (meta.key === "covers_worldwide_assets" || meta.key === "has_children") {
+        frontBodyHtml = `
+          <div class="state-card-edit-container">
+            <select class="tile-edit-select" id="tile-input-${meta.tileIndex}">
+              <option value="true" ${rawVal === true ? "selected" : ""}>Yes</option>
+              <option value="false" ${rawVal === false ? "selected" : ""}>No</option>
+            </select>
+            <div class="tile-edit-actions-row">
+              <button type="button" class="tile-save-btn" id="tile-save-${meta.tileIndex}">Save ✓</button>
+              <button type="button" class="tile-cancel-btn" id="tile-cancel-${meta.tileIndex}">Cancel ✕</button>
+            </div>
+          </div>
+        `;
+      } else if (meta.key === "additional_wishes") {
+        frontBodyHtml = `
+          <div class="state-card-edit-container">
+            <textarea class="tile-edit-textarea" id="tile-input-${meta.tileIndex}" rows="2" placeholder="Enter personal wishes...">${rawVal || ""}</textarea>
+            <div class="tile-edit-actions-row">
+              <button type="button" class="tile-save-btn" id="tile-save-${meta.tileIndex}">Save ✓</button>
+              <button type="button" class="tile-cancel-btn" id="tile-cancel-${meta.tileIndex}">Cancel ✕</button>
+            </div>
+          </div>
+        `;
+      } else if (meta.key === "children_names" || meta.key === "specific_gifts") {
+        const listStr = Array.isArray(rawVal) ? rawVal.join(", ") : (rawVal || "");
+        frontBodyHtml = `
+          <div class="state-card-edit-container">
+            <input type="text" class="tile-edit-input" id="tile-input-${meta.tileIndex}" value="${listStr}" placeholder="e.g. Item 1, Item 2" />
+            <div class="tile-edit-actions-row">
+              <button type="button" class="tile-save-btn" id="tile-save-${meta.tileIndex}">Save ✓</button>
+              <button type="button" class="tile-cancel-btn" id="tile-cancel-${meta.tileIndex}">Cancel ✕</button>
+            </div>
+          </div>
+        `;
+      } else {
+        frontBodyHtml = `
+          <div class="state-card-edit-container">
+            <input type="text" class="tile-edit-input" id="tile-input-${meta.tileIndex}" value="${rawVal || ""}" placeholder="Enter ${meta.label}..." />
+            <div class="tile-edit-actions-row">
+              <button type="button" class="tile-save-btn" id="tile-save-${meta.tileIndex}">Save ✓</button>
+              <button type="button" class="tile-cancel-btn" id="tile-cancel-${meta.tileIndex}">Cancel ✕</button>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      frontBodyHtml = `
+        <div class="state-card-value clickable-val ${!displayVal ? "empty" : ""}" id="tile-val-click-${meta.tileIndex}" title="Click to edit this field">
+          ${displayVal || "Not yet provided"}
+        </div>
+        ${isClarify ? `<div class="state-card-clarification-note">⚠️ ${flagged[meta.key]}</div>` : ""}
+        <div class="state-card-footer">
+          <span class="flip-hint-btn" id="tile-flip-hint-${meta.tileIndex}">🖼️ View Tile #${meta.tileIndex}</span>
+        </div>
+      `;
+    }
 
     cardContainer.innerHTML = `
       <div class="state-card-inner">
-        <!-- FRONT FACE: Structured Field Data -->
+        <!-- FRONT FACE: Structured Field Data & Direct Edit Controls -->
         <div class="state-card-face state-card-front">
           <div class="state-card-header">
             <span class="state-card-label">
               <span class="tile-number-badge">#${meta.tileIndex}</span>
               ${meta.icon} ${meta.label}
             </span>
-            <span class="state-pill ${statusType}">${statusText}</span>
+            <div class="card-header-actions">
+              <button type="button" class="tile-edit-btn" id="tile-edit-btn-${meta.tileIndex}" title="Edit this field">✏️ Edit</button>
+              <span class="state-pill ${statusType}">${statusText}</span>
+            </div>
           </div>
-          <div class="state-card-value ${!displayVal ? "empty" : ""}">
-            ${displayVal || "Not yet provided"}
-          </div>
-          ${isClarify ? `<div class="state-card-clarification-note">⚠️ ${flagged[meta.key]}</div>` : ""}
-          <div class="state-card-footer">
-            <span class="flip-hint-btn" aria-hidden="true">🖼️ View Tile #${meta.tileIndex}</span>
-          </div>
+          ${frontBodyHtml}
         </div>
 
-        <!-- BACK FACE: Illustrated Field Tile Artwork (1 - 9) -->
+        <!-- BACK FACE: Illustrated Field Tile Artwork -->
         <div class="state-card-face state-card-back">
           <div class="tile-image-wrapper">
+            <button type="button" class="tile-art-edit-tag" id="tile-art-edit-${meta.tileIndex}" title="Edit field value">✏️ Edit</button>
             <img src="${meta.image}" alt="Field Tile #${meta.tileIndex} - ${meta.label}" class="tile-art-img" loading="lazy" />
-            <div class="tile-image-overlay">
-              <div class="tile-overlay-top">
-                <span class="tile-art-badge">Tile #${meta.tileIndex} • ${meta.label}</span>
-                <span class="tile-status-icon" title="Confirmed">${confirmed ? "✓" : "◯"}</span>
-              </div>
-              <div class="tile-overlay-bottom">
-                <span class="tile-overlay-label">${meta.label}</span>
-                <div class="tile-overlay-value">${displayVal || "Pending entry…"}</div>
-              </div>
-            </div>
-            <span class="tile-flip-back-tag">📋 Tap for details</span>
           </div>
         </div>
       </div>
     `;
 
-    // Click on card toggles individual flip
+    // Event Wiring for Edit Mode
+    if (isEditing) {
+      const inputEl = cardContainer.querySelector(`#tile-input-${meta.tileIndex}`);
+      const saveBtn = cardContainer.querySelector(`#tile-save-${meta.tileIndex}`);
+      const cancelBtn = cardContainer.querySelector(`#tile-cancel-${meta.tileIndex}`);
+
+      if (inputEl) {
+        setTimeout(() => inputEl.focus(), 50);
+        inputEl.addEventListener("click", (e) => e.stopPropagation());
+        inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey && meta.key !== "additional_wishes") {
+            e.preventDefault();
+            if (saveBtn) saveBtn.click();
+          } else if (e.key === "Escape") {
+            if (cancelBtn) cancelBtn.click();
+          }
+        });
+      }
+
+      if (saveBtn) {
+        saveBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let newVal = inputEl ? inputEl.value : "";
+          if (meta.key === "covers_worldwide_assets" || meta.key === "has_children") {
+            newVal = newVal === "true";
+          }
+          saveFieldDirectly(meta.key, newVal);
+        });
+      }
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          activeEditingField = null;
+          renderStateCards(latestState);
+        });
+      }
+    } else {
+      // Wire Edit button
+      const editBtn = cardContainer.querySelector(`#tile-edit-btn-${meta.tileIndex}`);
+      if (editBtn) {
+        editBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          activeEditingField = meta.key;
+          manualFlippedCards.set(meta.key, false);
+          renderStateCards(latestState);
+        });
+      }
+
+      // Wire clickable value
+      const valClickEl = cardContainer.querySelector(`#tile-val-click-${meta.tileIndex}`);
+      if (valClickEl) {
+        valClickEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          activeEditingField = meta.key;
+          manualFlippedCards.set(meta.key, false);
+          renderStateCards(latestState);
+        });
+      }
+
+      // Wire Flip hint button
+      const flipHintBtn = cardContainer.querySelector(`#tile-flip-hint-${meta.tileIndex}`);
+      if (flipHintBtn) {
+        flipHintBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isCurrentlyFlipped = cardContainer.classList.contains("is-flipped");
+          const nextFlipped = !isCurrentlyFlipped;
+          cardContainer.classList.toggle("is-flipped", nextFlipped);
+          manualFlippedCards.set(meta.key, nextFlipped);
+        });
+      }
+    }
+
+    // Wire back face edit tag
+    const artEditBtn = cardContainer.querySelector(`#tile-art-edit-${meta.tileIndex}`);
+    if (artEditBtn) {
+      artEditBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        activeEditingField = meta.key;
+        manualFlippedCards.set(meta.key, false);
+        renderStateCards(latestState);
+      });
+    }
+
+    // Click on card background flips card (unless in edit mode)
     cardContainer.addEventListener("click", () => {
+      if (activeEditingField === meta.key) return;
       const isCurrentlyFlipped = cardContainer.classList.contains("is-flipped");
       const nextFlipped = !isCurrentlyFlipped;
       cardContainer.classList.toggle("is-flipped", nextFlipped);
@@ -401,19 +579,6 @@ function renderStateCards(state, recentlyUpdated = []) {
   if (els.tilesCompleteBanner) {
     els.tilesCompleteBanner.style.display = allNineFilled ? "flex" : "none";
   }
-
-  // Update toggle flip all button label
-  if (els.toggleFlipText) {
-    if (globalForceFlipMode === true || allNineFilled) {
-      els.toggleFlipText.textContent = "Flip All to Data";
-      if (els.toggleFlipAllBtn) els.toggleFlipAllBtn.classList.add("active");
-    } else if (globalForceFlipMode === false) {
-      els.toggleFlipText.textContent = "Flip All to Art";
-      if (els.toggleFlipAllBtn) els.toggleFlipAllBtn.classList.remove("active");
-    } else {
-      els.toggleFlipText.textContent = totalConfirmedCount >= 5 ? "Flip All to Data" : "Flip All to Art";
-    }
-  }
 }
 
 function renderDocument(doc) {
@@ -423,7 +588,7 @@ function renderDocument(doc) {
   }
 }
 
-// ---------- Professional PDF Document Generator ----------
+// ---------- Formal Legal PDF Document Generator with Precision Borders ----------
 
 function downloadDocumentAsPdf() {
   if (!lastDocumentContent) {
@@ -435,7 +600,7 @@ function downloadDocumentAsPdf() {
   const safeName = testatorName.replace(/[^a-zA-Z0-9]/g, "_");
   const fileName = `Personal_Wishes_Document_${safeName}.pdf`;
 
-  // 1. Generate via jsPDF if available
+  // 1. Generate via jsPDF
   const jsPdfClass = window.jspdf?.jsPDF || window.jsPDF || (typeof jsPDF !== "undefined" ? jsPDF : null);
 
   if (jsPdfClass) {
@@ -452,56 +617,100 @@ function downloadDocumentAsPdf() {
       const contentWidth = pageWidth - margin * 2;
       let y = margin;
 
-      // Header Banner (Wenup Brand Purple #2D006B)
+      // Function to draw formal legal borders on current page
+      function drawFormalPageFrame(pageNum, totalNum) {
+        // Outer formal border line
+        doc.setDrawColor(45, 0, 107);
+        doc.setLineWidth(1.2);
+        doc.rect(24, 24, pageWidth - 48, pageHeight - 48);
+
+        // Inner subtle border line
+        doc.setDrawColor(215, 205, 235);
+        doc.setLineWidth(0.6);
+        doc.rect(28, 28, pageWidth - 56, pageHeight - 56);
+
+        // Footer dividing line & page numbering
+        doc.setDrawColor(220, 215, 235);
+        doc.line(margin, pageHeight - 34, pageWidth - margin, pageHeight - 34);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(130, 120, 150);
+        doc.text("CONFIDENTIAL & PRIVILEGED • DRAFT PERSONAL WISHES DOCUMENT", margin, pageHeight - 22);
+        doc.text(`Page ${pageNum} of ${totalNum}`, pageWidth - margin, pageHeight - 22, { align: "right" });
+      }
+
+      // ----------------- Page 1 Header -----------------
+      // Brand Header Banner (Deep Wenup Purple #2D006B)
       doc.setFillColor(45, 0, 107);
-      doc.rect(0, 0, pageWidth, 56, "F");
+      doc.rect(28, 28, pageWidth - 56, 46, "F");
 
       // Brand Wordmark
       doc.setTextColor(226, 248, 50); // #E2F832 Lime
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      doc.text("Wenup", margin, 36);
+      doc.text("Wenup", margin, 58);
 
       // Header Subtitle
       doc.setTextColor(245, 240, 255);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
-      doc.text("Personal Wishes Document • Confidential Draft", pageWidth - margin, 36, { align: "right" });
+      doc.text("Personal Wishes Document • Confidential Draft", pageWidth - margin, 58, { align: "right" });
 
-      y = 82;
+      y = 92;
 
-      // Document Title
+      // Main Document Title
       doc.setTextColor(36, 0, 87);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
-      doc.text("PERSONAL WISHES DOCUMENT", margin, y);
+      doc.text("PERSONAL WISHES DRAFT DOCUMENT", margin, y);
       y += 18;
 
-      // Metadata line
-      doc.setFontSize(9.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(95, 85, 119);
-      doc.text(`Testator: ${testatorName} | Generated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`, margin, y);
-      y += 16;
+      // Formal Metadata Box
+      doc.setFillColor(248, 246, 252);
+      doc.setDrawColor(215, 205, 235);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(margin, y, contentWidth, 32, 3, 3, "FD");
 
-      // Legal Disclaimer Card
-      doc.setFillColor(254, 246, 236); // #FEF6EC
-      doc.setDrawColor(250, 215, 160); // #FAD7A0
-      doc.roundedRect(margin, y, contentWidth, 36, 4, 4, "FD");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(45, 0, 107);
+      doc.text("Testator:", margin + 10, y + 14);
+      doc.text("Date Generated:", margin + 10, y + 26);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 50, 80);
+      doc.text(testatorName, margin + 60, y + 14);
+      doc.text(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }), margin + 90, y + 26);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(45, 0, 107);
+      doc.text("Status:", pageWidth - margin - 150, y + 14);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(17, 104, 50);
+      doc.text("Draft for Legal Review", pageWidth - margin - 110, y + 14);
+
+      y += 42;
+
+      // Legal Disclaimer Notice Card
+      doc.setFillColor(254, 246, 236);
+      doc.setDrawColor(250, 215, 160);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(margin, y, contentWidth, 34, 3, 3, "FD");
 
       doc.setTextColor(167, 78, 6);
       doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
-      doc.text("DEMONSTRATION ONLY — NOT LEGAL ADVICE", margin + 10, y + 13);
+      doc.text("DEMONSTRATION ONLY — NOT FORMAL LEGAL ADVICE", margin + 10, y + 13);
       doc.setFont("helvetica", "normal");
-      doc.text("This draft was compiled by the Wenup Conversational Intake Assistant. It must be reviewed by a qualified solicitor before formal execution.", margin + 10, y + 25);
+      doc.text("This draft was compiled via the Wenup Conversational Intake Assistant. It must be formally reviewed by a qualified solicitor.", margin + 10, y + 24);
 
-      y += 50;
+      y += 46;
 
-      // Content formatting from raw document string
+      // ----------------- Content Parsing & Section Divider Lines -----------------
       doc.setTextColor(30, 20, 50);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setLineHeightFactor(1.4);
 
       const rawLines = lastDocumentContent.split("\n");
@@ -510,86 +719,148 @@ function downloadDocumentAsPdf() {
         const rawLine = rawLines[i].trim();
 
         if (!rawLine) {
-          y += 8;
+          y += 6;
           continue;
         }
 
-        // Page break check
-        if (y > pageHeight - 65) {
+        // Page overflow check
+        if (y > pageHeight - 80) {
           doc.addPage();
           y = margin + 20;
         }
 
-        // Skip title & disclaimer lines that we rendered natively in header
+        // Skip title & disclaimer lines rendered natively above
         if (rawLine.startsWith("PERSONAL WISHES DOCUMENT") || rawLine.startsWith("Prepared:")) {
           continue;
         }
-        if (rawLine.startsWith("This is a FICTIONAL document")) {
+        if (rawLine.startsWith("This is a FICTIONAL document") || rawLine.startsWith("IMPORTANT LEGAL DISCLAIMER")) {
           continue;
         }
 
         // Section Headers (Uppercase words without colons)
         if (rawLine === rawLine.toUpperCase() && rawLine.length > 3 && !rawLine.includes(":") && !rawLine.startsWith("[")) {
-          y += 6;
+          y += 10;
+          if (y > pageHeight - 80) {
+            doc.addPage();
+            y = margin + 20;
+          }
+
+          // Draw subtle section separator rule
+          doc.setDrawColor(215, 205, 235);
+          doc.setLineWidth(0.75);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 14;
+
           doc.setFont("helvetica", "bold");
           doc.setTextColor(45, 0, 107);
-          doc.setFontSize(11);
+          doc.setFontSize(10.5);
           doc.text(rawLine, margin, y);
           y += 14;
+
           doc.setFont("helvetica", "normal");
           doc.setTextColor(30, 20, 50);
-          doc.setFontSize(10);
+          doc.setFontSize(9.5);
         } else {
           // Wrapped body text
           const splitLines = doc.splitTextToSize(rawLine, contentWidth);
           for (let s = 0; s < splitLines.length; s++) {
-            if (y > pageHeight - 65) {
+            if (y > pageHeight - 80) {
               doc.addPage();
               y = margin + 20;
             }
             doc.text(splitLines[s], margin, y);
-            y += 14;
+            y += 13.5;
           }
         }
       }
 
-      // Add Execution & Signatures Section
-      y += 12;
-      if (y > pageHeight - 110) {
+      // ----------------- Execution & Signatures Section -----------------
+      y += 14;
+      if (y > pageHeight - 140) {
         doc.addPage();
         y = margin + 20;
       }
 
+      doc.setDrawColor(215, 205, 235);
+      doc.setLineWidth(0.75);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 14;
+
       doc.setFont("helvetica", "bold");
       doc.setTextColor(45, 0, 107);
-      doc.setFontSize(11);
-      doc.text("EXECUTION & SIGNATURES", margin, y);
-      y += 18;
+      doc.setFontSize(10.5);
+      doc.text("FORMAL EXECUTION & ATTESTATION", margin, y);
+      y += 16;
 
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(95, 85, 119);
-      doc.setFontSize(9);
-      doc.text("Signed by the Testator in the presence of witnesses:", margin, y);
+      doc.setTextColor(80, 70, 100);
+      doc.setFontSize(8.5);
+      doc.text("Signed by the Testator in the presence of the undersigned witnesses present at the same time:", margin, y);
       y += 24;
 
-      doc.setDrawColor(180, 170, 205);
-      doc.line(margin, y, margin + 200, y);
-      doc.line(pageWidth - margin - 200, y, pageWidth - margin, y);
+      // Testator signature line
+      doc.setDrawColor(160, 150, 185);
+      doc.setLineWidth(0.75);
+      doc.line(margin, y, margin + 190, y);
+      doc.line(pageWidth - margin - 150, y, pageWidth - margin, y);
       y += 12;
-      doc.text("Testator Signature", margin, y);
-      doc.text("Date", pageWidth - margin - 200, y);
 
-      // Number pages in footer
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(45, 0, 107);
+      doc.text("Signature of Testator (" + testatorName + ")", margin, y);
+      doc.text("Date", pageWidth - margin - 150, y);
+
+      y += 24;
+      if (y > pageHeight - 90) {
+        doc.addPage();
+        y = margin + 20;
+      }
+
+      // Witness Boxes
+      const boxW = (contentWidth - 20) / 2;
+      doc.setDrawColor(215, 205, 235);
+      doc.roundedRect(margin, y, boxW, 44, 2, 2);
+      doc.roundedRect(margin + boxW + 20, y, boxW, 44, 2, 2);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(45, 0, 107);
+      doc.text("FIRST WITNESS", margin + 8, y + 12);
+      doc.text("SECOND WITNESS", margin + boxW + 28, y + 12);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(110, 100, 130);
+      doc.text("Signature / Name / Occupation / Address", margin + 8, y + 32);
+      doc.text("Signature / Name / Occupation / Address", margin + boxW + 28, y + 32);
+
+      // Draw all page frames
       const totalPages = doc.internal.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
-        doc.setFontSize(8);
-        doc.setTextColor(132, 123, 155);
-        doc.text(`Wenup Document Intake Assistant • Page ${p} of ${totalPages}`, pageWidth / 2, pageHeight - 22, { align: "center" });
+        drawFormalPageFrame(p, totalPages);
       }
 
       doc.save(fileName);
-      addSystemNote(`📥 PDF downloaded successfully: ${fileName}`);
+
+      // Dual fallback via Blob URL trigger
+      try {
+        const blob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          a.remove();
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      } catch (blobErr) {
+        // Handled by doc.save
+      }
+
+      addSystemNote(`📥 PDF document downloaded: ${fileName}`);
       return;
     } catch (err) {
       console.warn("jsPDF export error, falling back to print view", err);
@@ -609,7 +880,7 @@ function downloadDocumentAsPdf() {
           .header { background: #2D006B; color: #fff; padding: 18px 24px; border-radius: 8px; margin-bottom: 24px; }
           .brand { font-size: 24px; font-weight: bold; color: #E2F832; }
           .disclaimer { background: #FEF6EC; border: 1px solid #FAD7A0; padding: 12px; font-size: 12px; margin: 16px 0; border-radius: 6px; color: #a74e06; }
-          pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; background: #faf8f5; padding: 20px; border-radius: 8px; }
+          pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; background: #faf8f5; padding: 20px; border-radius: 8px; border: 1px solid #e4dafa; }
         </style>
       </head>
       <body>
@@ -672,6 +943,7 @@ async function startSession() {
   els.chatLog.innerHTML = "";
   manualFlippedCards.clear();
   globalForceFlipMode = null;
+  activeEditingField = null;
   currentTurnCount = 0;
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
   if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";
@@ -766,6 +1038,7 @@ async function finishDocumentNow() {
   // Force all 9 cards to flip to Art mode
   globalForceFlipMode = true;
   manualFlippedCards.clear();
+  activeEditingField = null;
   if (latestState) {
     renderStateCards(latestState);
   }
@@ -773,7 +1046,7 @@ async function finishDocumentNow() {
   // Reveal Tab 1 complete card
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "flex";
 
-  addSystemNote("✨ Document finalized! All 9 confirmed fields are now compiled into your draft Personal Wishes Document.");
+  addSystemNote("✨ Document finalized! All 9 confirmed fields are compiled into your draft Personal Wishes Document.");
 }
 
 // ---------- Event Listeners ----------
@@ -788,26 +1061,25 @@ if (els.chatForm) {
   });
 }
 
-if (els.toggleFlipAllBtn) {
-  els.toggleFlipAllBtn.addEventListener("click", () => {
-    if (globalForceFlipMode === true) {
-      globalForceFlipMode = false;
-    } else {
-      globalForceFlipMode = true;
-    }
-    manualFlippedCards.clear();
-    if (latestState) {
-      renderStateCards(latestState);
-    }
-  });
-}
-
 if (els.stateFinishBtn) {
   els.stateFinishBtn.addEventListener("click", finishDocumentNow);
 }
 
 if (els.headerFinishBtn) {
   els.headerFinishBtn.addEventListener("click", finishDocumentNow);
+}
+
+// Landing Splash Screen Transition
+if (els.landingGetStartedBtn) {
+  els.landingGetStartedBtn.addEventListener("click", () => {
+    if (els.landingScreen) {
+      els.landingScreen.classList.add("landing-hidden");
+      setTimeout(() => {
+        els.landingScreen.style.display = "none";
+        if (els.chatInput) els.chatInput.focus();
+      }, 400);
+    }
+  });
 }
 
 // Tab 1 Download PDF & View Doc
@@ -881,6 +1153,7 @@ async function resetSession() {
   lastDocumentContent = "";
   manualFlippedCards.clear();
   globalForceFlipMode = null;
+  activeEditingField = null;
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
   if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";
 

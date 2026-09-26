@@ -153,10 +153,112 @@ def post_message(session_id: str, body: MessageRequest) -> MessageResponse:
         )
 
 
+class UpdateStateRequest(BaseModel):
+    field: Optional[str] = None
+    value: Optional[Any] = None
+    updates: Optional[dict[str, Any]] = None
+
+
 @app.get("/api/session/{session_id}/state")
 def get_state(session_id: str) -> dict:
     session = _get_session(session_id)
     return session.state.summary_dict()
+
+
+@app.patch("/api/session/{session_id}/state")
+@app.post("/api/session/{session_id}/state")
+def update_state(session_id: str, body: UpdateStateRequest) -> dict:
+    """Explicit human-in-the-loop state mutation endpoint. Allows users to directly
+    edit structured field values in the UI with immediate canonical state sync."""
+    lock = _get_session_lock(session_id)
+    with lock:
+        session = _get_session(session_id)
+        
+        # Build dict of updates to apply
+        field_updates: dict[str, Any] = {}
+        if body.updates:
+            field_updates.update(body.updates)
+        if body.field is not None:
+            field_updates[body.field] = body.value
+
+        for key, val in field_updates.items():
+            norm_key = key.replace(".", "_")
+            if norm_key == "full_name":
+                session.state.full_name = str(val).strip() if val is not None and str(val).strip() else None
+                session.state.needs_clarification.pop("full_name", None)
+            elif norm_key == "home_address":
+                session.state.home_address = str(val).strip() if val is not None and str(val).strip() else None
+                session.state.needs_clarification.pop("home_address", None)
+            elif norm_key == "covers_worldwide_assets":
+                if isinstance(val, bool):
+                    session.state.covers_worldwide_assets = val
+                elif isinstance(val, str):
+                    session.state.covers_worldwide_assets = val.strip().lower() in ("true", "yes", "1", "worldwide")
+                elif val is None:
+                    session.state.covers_worldwide_assets = None
+                session.state.needs_clarification.pop("covers_worldwide_assets", None)
+            elif norm_key == "has_children":
+                if isinstance(val, bool):
+                    session.state.has_children = val
+                elif isinstance(val, str):
+                    session.state.has_children = val.strip().lower() in ("true", "yes", "1")
+                elif val is None:
+                    session.state.has_children = None
+                if session.state.has_children is False:
+                    session.state.children_names = []
+                session.state.needs_clarification.pop("has_children", None)
+            elif norm_key in ("children_names", "children"):
+                if isinstance(val, list):
+                    session.state.children_names = [str(x).strip() for x in val if str(x).strip()]
+                elif isinstance(val, str):
+                    session.state.children_names = [x.strip() for x in val.split(",") if x.strip()]
+                elif val is None:
+                    session.state.children_names = []
+                if session.state.children_names:
+                    session.state.has_children = True
+                session.state.needs_clarification.pop("children_names", None)
+            elif norm_key in ("executor_name", "executor"):
+                if isinstance(val, dict):
+                    if "name" in val:
+                        session.state.executor.name = str(val["name"]).strip() if val["name"] else None
+                    if "relationship" in val:
+                        session.state.executor.relationship = str(val["relationship"]).strip() if val["relationship"] else None
+                else:
+                    session.state.executor.name = str(val).strip() if val is not None and str(val).strip() else None
+                session.state.needs_clarification.pop("executor.name", None)
+                session.state.needs_clarification.pop("executor", None)
+            elif norm_key == "executor_relationship":
+                session.state.executor.relationship = str(val).strip() if val is not None and str(val).strip() else None
+                session.state.needs_clarification.pop("executor.relationship", None)
+            elif norm_key == "specific_gifts":
+                if isinstance(val, list):
+                    session.state.specific_gifts = [str(x).strip() for x in val if str(x).strip()]
+                elif isinstance(val, str):
+                    session.state.specific_gifts = [x.strip() for x in val.split(";") if x.strip()] if ";" in val else ([x.strip() for x in val.split(",") if x.strip()] if val.strip() and val.strip().lower() != "none" else [])
+                elif val is None:
+                    session.state.specific_gifts = []
+                session.state.gifts_addressed = True
+                session.state.needs_clarification.pop("specific_gifts", None)
+            elif norm_key == "additional_wishes":
+                session.state.additional_wishes = str(val).strip() if val is not None and str(val).strip() and str(val).strip().lower() != "none" else None
+                session.state.wishes_addressed = True
+                session.state.needs_clarification.pop("additional_wishes", None)
+
+        session.revision += 1
+        session.updated_at = time.time()
+        document = generate_document(session.state)
+        if session.state.is_core_complete():
+            session.document_generated = True
+
+        return {
+            "status": "ok",
+            "state": session.state.summary_dict(),
+            "document": document,
+            "core_complete": session.state.is_core_complete(),
+            "progress": session.state.completion_progress(),
+            "revision": session.revision,
+        }
+
 
 
 

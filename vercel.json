@@ -1,3 +1,35 @@
 {
-  "framework": "fastapi"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/field_tiles/(.*)",
+      "dest": "/frontend/field_tiles/$1"
+    },
+    {
+      "src": "/(style\\.css|app\\.js|jspdf\\.umd\\.min\\.js|wenupbg\\.png|check_br\\.png|favicon\\.ico)",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
 }

@@ -80,6 +80,135 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   Full-Screen Landing Splash Screen (wenupbg.png)
+   ========================================================================== */
+.landing-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: #8054F4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s;
+  overflow: hidden;
+}
+
+.landing-screen.landing-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.landing-content-frame {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: calc(100vh * (1536 / 1024));
+  max-height: calc(100vw * (1024 / 1536));
+  aspect-ratio: 1536 / 1024;
+  background-image: url('wenupbg.png');
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  box-shadow: none;
+}
+
+.landing-cta-block {
+  position: absolute;
+  left: 8%;
+  bottom: 9.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  z-index: 10;
+  max-width: 520px;
+}
+
+.landing-explainer-yellow {
+  color: #E2F832;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.45;
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
+  animation: fadeInMsg 0.4s ease;
+}
+
+.landing-get-started-btn {
+  background: #E2F832;
+  color: #1C0044;
+  border: none;
+  border-radius: 9999px;
+  padding: 13px 28px;
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(226, 248, 50, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-get-started-btn:hover {
+  background: #D4FF00;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 10px 30px rgba(226, 248, 50, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.landing-get-started-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (max-width: 1024px) {
+  .landing-cta-block {
+    left: 7%;
+    bottom: 8%;
+    gap: 10px;
+  }
+  .landing-explainer-yellow {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  .landing-get-started-btn {
+    padding: 12px 24px;
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-cta-block {
+    left: 5%;
+    bottom: 6%;
+    right: 5%;
+    max-width: 90%;
+    gap: 8px;
+  }
+  .landing-explainer-yellow {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .landing-get-started-btn {
+    padding: 10px 20px;
+    font-size: 13.5px;
+  }
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -1121,10 +1250,160 @@ html, body {
   padding: 4px 6px;
 }
 
+.card-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tile-edit-btn {
+  background: var(--surface-lilac);
+  color: var(--wenup-purple);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tile-edit-btn:hover {
+  background: var(--wenup-purple);
+  color: var(--wenup-lime);
+  border-color: var(--wenup-purple);
+  transform: translateY(-1px);
+}
+
+.state-card-edit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  margin-top: 2px;
+}
+
+.tile-edit-input,
+.tile-edit-select,
+.tile-edit-textarea {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1.5px solid var(--wenup-purple);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(45, 0, 107, 0.12);
+  transition: border-color 0.15s ease;
+}
+
+.tile-edit-input:focus,
+.tile-edit-select:focus,
+.tile-edit-textarea:focus {
+  border-color: var(--wenup-purple-mid);
+  box-shadow: 0 0 0 3px rgba(62, 5, 140, 0.2);
+}
+
+.tile-edit-textarea {
+  resize: vertical;
+  min-height: 48px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.tile-edit-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.tile-save-btn {
+  background: var(--wenup-purple);
+  color: var(--wenup-lime);
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tile-save-btn:hover {
+  background: var(--wenup-purple-mid);
+  transform: translateY(-1px);
+}
+
+.tile-cancel-btn {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tile-cancel-btn:hover {
+  background: var(--surface-lilac);
+  color: var(--wenup-purple);
+}
+
+.tile-art-edit-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(45, 0, 107, 0.88);
+  backdrop-filter: blur(4px);
+  color: #FFFFFF;
+  border: 1px solid rgba(226, 248, 50, 0.6);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.tile-art-edit-tag:hover {
+  background: var(--wenup-purple);
+  color: var(--wenup-lime);
+  transform: scale(1.04);
+}
+
+.state-card-value.clickable-val {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 3px 4px;
+  margin: -1px -4px;
+  transition: background-color 0.15s ease;
+}
+
+.state-card-value.clickable-val:hover {
+  background: var(--surface-lilac);
+  color: var(--wenup-purple);
+}
+
 .state-card-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding-top: 4px;
   border-top: 1px dashed var(--border-light);
   margin-top: auto;
@@ -1139,6 +1418,7 @@ html, body {
   gap: 4px;
   opacity: 0.85;
   transition: opacity 0.15s ease;
+  cursor: pointer;
 }
 
 .state-card-flip-container:hover .flip-hint-btn {

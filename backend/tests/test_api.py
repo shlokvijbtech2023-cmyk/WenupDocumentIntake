@@ -58,3 +58,39 @@ def test_state_and_document_endpoints_reflect_latest_confirmed_state():
 
     doc = client.get(f"/api/session/{session_id}/document").json()["document"]
     assert "Jane Smith" in doc
+
+
+def test_direct_state_update_endpoint_human_intervention():
+    session_id = client.post("/api/session").json()["session_id"]
+    
+    # Update single field
+    patch_resp = client.patch(
+        f"/api/session/{session_id}/state",
+        json={"field": "full_name", "value": "Alice Human Editor"}
+    )
+    assert patch_resp.status_code == 200
+    data = patch_resp.json()
+    assert data["state"]["full_name"] == "Alice Human Editor"
+    assert "Alice Human Editor" in data["document"]
+
+    # Update multiple fields at once
+    patch_resp2 = client.patch(
+        f"/api/session/{session_id}/state",
+        json={
+            "updates": {
+                "home_address": "456 Oxford Street, London",
+                "covers_worldwide_assets": True,
+                "has_children": True,
+                "children_names": ["Leo", "Maya"],
+                "executor_name": "Bob Solicitor",
+                "executor_relationship": "Solicitor"
+            }
+        }
+    )
+    assert patch_resp2.status_code == 200
+    data2 = patch_resp2.json()
+    assert data2["core_complete"] is True
+    assert data2["state"]["executor"]["name"] == "Bob Solicitor"
+    assert "Bob Solicitor" in data2["document"]
+    assert "456 Oxford Street, London" in data2["document"]
+
