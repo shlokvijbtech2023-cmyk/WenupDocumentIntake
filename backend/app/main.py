@@ -1,5 +1,5 @@
-import asyncio
 import os
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -31,7 +31,8 @@ app.add_middleware(
 # Transient in-memory storage: Zero disk/database persistence for privacy.
 # In production, sessions can be backed by Redis with TTL.
 _SESSIONS: dict[str, SessionData] = {}
-_SESSION_LOCKS: dict[str, asyncio.Lock] = {}
+_LOCKS_GUARD = threading.Lock()
+_SESSION_LOCKS: dict[str, threading.Lock] = {}
 _LLM = get_llm_client()
 
 SESSION_TTL_SECONDS = 7200  # 2 hours
@@ -43,22 +44,25 @@ OPENING_MESSAGE = (
 )
 
 
+def _get_session_lock(session_id: str) -> threading.Lock:
+    """Safely retrieves or instantiates a per-session threading.Lock under a registry guard."""
+    with _LOCKS_GUARD:
+        if session_id not in _SESSION_LOCKS:
+            _SESSION_LOCKS[session_id] = threading.Lock()
+        return _SESSION_LOCKS[session_id]
+
+
 def _cleanup_expired_sessions() -> None:
     """Prunes sessions older than SESSION_TTL_SECONDS to avoid memory leaks."""
     now = time.time()
-    expired = [
-        sid for sid, s in _SESSIONS.items()
-        if now - getattr(s, "updated_at", s.created_at) > SESSION_TTL_SECONDS
-    ]
-    for sid in expired:
-        _SESSIONS.pop(sid, None)
-        _SESSION_LOCKS.pop(sid, None)
-
-
-def _get_session_lock(session_id: str) -> asyncio.Lock:
-    if session_id not in _SESSION_LOCKS:
-        _SESSION_LOCKS[session_id] = asyncio.Lock()
-    return _SESSION_LOCKS[session_id]
+    with _LOCKS_GUARD:
+        expired = [
+            sid for sid, s in _SESSIONS.items()
+            if now - getattr(s, "updated_at", s.created_at) > SESSION_TTL_SECONDS
+        ]
+        for sid in expired:
+            _SESSIONS.pop(sid, None)
+            _SESSION_LOCKS.pop(sid, None)
 
 
 class CreateSessionResponse(BaseModel):
@@ -111,7 +115,7 @@ def create_session() -> CreateSessionResponse:
     session = SessionData(session_id=session_id)
     session.history.append(Turn(role="assistant", content=OPENING_MESSAGE))
     _SESSIONS[session_id] = session
-    _SESSION_LOCKS[session_id] = asyncio.Lock()
+    _get_session_lock(session_id)
     return CreateSessionResponse(
         session_id=session_id,
         assistant_message=OPENING_MESSAGE,
@@ -122,13 +126,12 @@ def create_session() -> CreateSessionResponse:
 
 
 @app.post("/api/session/{session_id}/message", response_model=MessageResponse)
-async def post_message(session_id: str, body: MessageRequest) -> MessageResponse:
-    session = _get_session(session_id)
+def post_message(session_id: str, body: MessageRequest) -> MessageResponse:
     if not body.message or not body.message.strip():
         raise HTTPException(status_code=400, detail="message must not be empty")
 
     lock = _get_session_lock(session_id)
-    async with lock:
+    with lock:
         # Re-check session inside lock to prevent race conditions during deletion/reset
         session = _get_session(session_id)
         result = process_turn(session, body.message.strip(), _LLM)
@@ -168,12 +171,13 @@ def get_document(session_id: str) -> dict:
 
 @app.post("/api/session/{session_id}/reset")
 @app.delete("/api/session/{session_id}")
-async def reset_session(session_id: str) -> dict:
+def reset_session(session_id: str) -> dict:
     """Explicitly resets and discards all transient session data for privacy."""
     lock = _get_session_lock(session_id)
-    async with lock:
+    with lock:
         _SESSIONS.pop(session_id, None)
-        _SESSION_LOCKS.pop(session_id, None)
+        with _LOCKS_GUARD:
+            _SESSION_LOCKS.pop(session_id, None)
     return {"status": "ok", "message": "Session data cleared successfully"}
 
 

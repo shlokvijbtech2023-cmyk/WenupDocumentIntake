@@ -56,8 +56,9 @@
 ```
 
 ### 2.1 Distributed Redis Session Store & Redlock
-* **Current State:** Python `asyncio.Lock` and in-memory dictionary (single instance).
-* **Production Requirement:** Deploy a multi-node Redis cluster utilizing the Redlock algorithm for distributed locking across autoscaled Kubernetes pods.
+* **Current State:** Python per-session `threading.Lock` under an atomic registry guard in memory.
+* **Production Scope Note:** *Current deployment uses process-local transient sessions. Per-session locks protect concurrent access to a session within the same Python process. A multi-process or multi-instance production deployment would require shared state and an appropriate distributed concurrency/idempotency strategy.*
+* **Production Requirement:** Deploy a multi-node Redis Sentinel / AWS ElastiCache cluster utilizing the Redlock algorithm for distributed locking and session serialization across autoscaled Kubernetes pods.
 
 ### 2.2 Stateless Microservices Separation
 * Separate the architecture into dedicated microservices:

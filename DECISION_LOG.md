@@ -123,14 +123,14 @@ Estate intake documents contain sensitive personally identifiable information (P
 
 ---
 
-## ADR-007: Per-Session Asynchronous Locking for Request Concurrency Safety
+## ADR-007: Per-Session Thread Locking for Request Concurrency Safety
 
 ### Context
-In fast-typing sessions or automated multi-turn API calls, multiple requests for the same session ID can arrive concurrently, creating race conditions where turn $N+1$ reads uncommitted state from turn $N$.
+In fast-typing sessions, browser retries, or automated multi-turn API calls, multiple requests for the same session ID can arrive concurrently on separate worker threads in the FastAPI thread pool, creating race conditions where turn $N+1$ reads uncommitted state from turn $N$.
 
 ### Decision
-We implemented per-session `asyncio.Lock` instances in `SessionManager`. Every turn request acquires the session lock before reading session history and releases it only after the updated state and document have been committed.
+We implemented a per-session `threading.Lock` architecture (`_SESSION_LOCKS: dict[str, threading.Lock]`) with an atomic registry guard (`_LOCKS_GUARD = threading.Lock()`). Every turn request acquires the session-specific lock via `with lock:` context-manager semantics, protecting the complete read-extract-validate-mutate-generate cycle while allowing requests for different sessions to execute in parallel without contention.
 
 ### Consequences
-* **Positive:** Guaranteed serial execution per session; eliminates state corruption and race conditions under rapid multi-turn load.
-* **Trade-off:** Minimal lock contention overhead per session (isolated across distinct session IDs).
+* **Positive:** Guaranteed serial execution per session; eliminates state corruption and race conditions under rapid multi-turn load; different sessions run in parallel.
+* **Production Scope Note:** Current deployment uses process-local transient sessions. Per-session locks protect concurrent access to a session within the same Python process. A multi-process or multi-instance production deployment would require shared state and an appropriate distributed concurrency/idempotency strategy (e.g. Redis Redlock).

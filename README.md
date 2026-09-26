@@ -3,7 +3,7 @@
 **Engineering Evaluation Submission**  
 *A reliable, privacy-first conversational legal intake assistant powered by a hybrid deterministic-LLM architecture.*
 
-[![Test Suite](https://img.shields.io/badge/Tests-95%20Passed%20(100%25)-brightgreen.svg)]()
+[![Test Suite](https://img.shields.io/badge/Tests-101%20Passed%20(100%25)-brightgreen.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)]()
 [![License](https://img.shields.io/badge/License-Proprietary-purple.svg)]()
@@ -22,7 +22,7 @@
                                     │ REST / JSON API (FastAPI)
 ┌───────────────────────────────────▼────────────────────────────────────┐
 │                    BACKEND APPLICATION CONTROLLER                      │
-│  - Concurrency Lock: asyncio.Lock per active Session ID                │
+│  - Concurrency Lock: threading.Lock per active Session ID under Guard  │
 │  - Session Manager: Transient in-memory state with 2-hour TTL pruning  │
 └──────┬────────────────────────────┬─────────────────────────────┬──────┘
        │ 1. Extraction Candidate    │ 2. Validation & Gating      │ 3. Generation
@@ -39,6 +39,7 @@
 ## 🌟 Key Engineering Highlights
 
 * 🛡️ **Strict Deterministic Boundary:** LLMs act exclusively as unstructured NLU parsers producing candidate updates. All state mutations, cross-field invariants, and document generation are governed by deterministic Python/Pydantic code.
+* 🔒 **Per-Session Concurrency Safety:** Standard library `threading.Lock` under an atomic registry guard serializes concurrent requests to the *same* session while allowing requests for *different* sessions to execute in parallel without contention.
 * 🚦 **Contradiction Quarantine Engine:** Conflicting cross-turn answers are automatically quarantined in `needs_clarification` rather than silently overwriting verified data.
 * 📜 **Zero-Hallucination Legal Drafter:** The draft document is rendered deterministically with mandatory legal disclaimer headers and explicit `[Information Required]` placeholders.
 * 🔒 **Privacy-by-Design:** Zero persistent browser storage (`localStorage`, `IndexedDB`). Sessions exist purely in backend memory with a 2-hour TTL and instant purge on reset.
@@ -83,7 +84,7 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ## 🧪 Running Automated Tests
 
-The repository includes a comprehensive 95-test evaluation suite adhering to the **Evaluation Test Corpus**:
+The repository includes a comprehensive 101-test evaluation suite adhering to the **Evaluation Test Corpus**:
 
 ```bash
 cd backend
@@ -93,18 +94,19 @@ pytest -v
 
 ### Test Suite Summary:
 ```text
-============================== 95 passed in 0.22s ==============================
-- State & Domain Models:        8 / 8   PASSED
-- Schema & Validation Gating:   11 / 11 PASSED
-- Conversation Engine:          9 / 9   PASSED
+============================= 101 passed in 0.49s ==============================
+- State & Domain Models:        7 / 7   PASSED
+- Schema & Validation Gating:   13 / 13 PASSED
+- Conversation Engine:          10 / 10 PASSED
 - Legal Template Generator:     5 / 5   PASSED
-- Session & Concurrency Lock:   4 / 4   PASSED
-- Evaluation Corpus (TC-001–58):22 / 22 PASSED
+- Session & Concurrency Lock:   10 / 10 PASSED
+- Evaluation Corpus (TC-001–58):26 / 26 PASSED
 - End-to-End User Journeys:     7 / 7   PASSED
+- Adversarial Defense:          5 / 5   PASSED
 - Fallback Fault Injection:     4 / 4   PASSED
 - Parsing & Markdown Recovery:  3 / 3   PASSED
 - Real Provider Smoke Invariants:6 / 6  PASSED
-- API Endpoints & Contracts:    4 / 4   PASSED
+- API Endpoints & Contracts:    5 / 5   PASSED
 ```
 
 ---

@@ -458,29 +458,38 @@ html, body {
 .quick-chips-wrapper {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  padding: 0 18px 10px;
+  gap: 8px;
+  padding: 4px 18px 12px;
   background-color: var(--canvas-paper);
 }
 
 .quick-chip {
-  background: var(--surface-card);
-  border: 1px solid var(--border-strong);
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-strong);
   color: var(--wenup-purple);
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-pill);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 4px rgba(45, 0, 107, 0.06);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .quick-chip:hover {
   background: var(--wenup-lime);
   color: var(--wenup-purple-deep);
-  border-color: var(--wenup-lime-hover);
-  transform: translateY(-1px);
+  border-color: #CBE600;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(226, 248, 50, 0.35);
+}
+
+.quick-chip:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(45, 0, 107, 0.1);
 }
 
 /* Chat Input Form */
