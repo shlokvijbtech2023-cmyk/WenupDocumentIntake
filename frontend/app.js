@@ -54,17 +54,17 @@ const els = {
   telemetryJsonRaw: document.getElementById("telemetry-json-raw"),
 };
 
-// Field metadata: Tiles 1 to 8 point to 10.png, Tile 9 points to 11.png
+// Field metadata: Tiles 1 to 8 point to 10.webp (with 10.png fallback), Tile 9 points to 11.webp
 const FIELD_METADATA = [
-  { key: "full_name", tileIndex: 1, label: "Full Name", icon: "👤", desc: "Testator's legal full name", image: "field_tiles/10.png" },
-  { key: "home_address", tileIndex: 2, label: "Home Address", icon: "🏠", desc: "Residential address", image: "field_tiles/10.png" },
-  { key: "covers_worldwide_assets", tileIndex: 3, label: "Worldwide Assets", icon: "🌍", desc: "Scope of asset coverage", image: "field_tiles/10.png" },
-  { key: "has_children", tileIndex: 4, label: "Has Children", icon: "👶", desc: "Parental status", image: "field_tiles/10.png" },
-  { key: "children_names", tileIndex: 5, label: "Children's Names", icon: "👥", desc: "Named beneficiaries (if applicable)", image: "field_tiles/10.png" },
-  { key: "executor.name", tileIndex: 6, label: "Executor Name", icon: "⚖️", desc: "Appointed legal representative", image: "field_tiles/10.png" },
-  { key: "executor.relationship", tileIndex: 7, label: "Executor Relationship", icon: "🤝", desc: "Relationship to testator", image: "field_tiles/10.png" },
-  { key: "specific_gifts", tileIndex: 8, label: "Specific Gifts", icon: "🎁", desc: "Designated personal bequests", image: "field_tiles/10.png" },
-  { key: "additional_wishes", tileIndex: 9, label: "Additional Wishes", icon: "📝", desc: "Funeral or personal wishes", image: "field_tiles/11.png" },
+  { key: "full_name", tileIndex: 1, label: "Full Name", icon: "👤", desc: "Testator's legal full name", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "home_address", tileIndex: 2, label: "Home Address", icon: "🏠", desc: "Residential address", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "covers_worldwide_assets", tileIndex: 3, label: "Worldwide Assets", icon: "🌍", desc: "Scope of asset coverage", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "has_children", tileIndex: 4, label: "Has Children", icon: "👶", desc: "Parental status", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "children_names", tileIndex: 5, label: "Children's Names", icon: "👥", desc: "Named beneficiaries (if applicable)", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "executor.name", tileIndex: 6, label: "Executor Name", icon: "⚖️", desc: "Appointed legal representative", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "executor.relationship", tileIndex: 7, label: "Executor Relationship", icon: "🤝", desc: "Relationship to testator", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "specific_gifts", tileIndex: 8, label: "Specific Gifts", icon: "🎁", desc: "Designated personal bequests", image: "field_tiles/10.webp", fallbackImage: "field_tiles/10.png" },
+  { key: "additional_wishes", tileIndex: 9, label: "Additional Wishes", icon: "📝", desc: "Funeral or personal wishes", image: "field_tiles/11.webp", fallbackImage: "field_tiles/11.png" },
 ];
 
 let sessionId = null;
@@ -465,10 +465,13 @@ function renderStateCards(state, recentlyUpdated = []) {
           ${frontBodyHtml}
         </div>
 
-        <!-- BACK FACE: Illustrated Field Tile Artwork (10.png for 1-8, 11.png for 9) -->
+        <!-- BACK FACE: Illustrated Field Tile Artwork (10.webp for 1-8, 11.webp for 9 with PNG fallback) -->
         <div class="state-card-face state-card-back">
           <div class="tile-image-wrapper">
-            <img src="${meta.image}" alt="Field Tile #${meta.tileIndex} - ${meta.label}" class="tile-art-img" loading="lazy" />
+            <picture>
+              <source srcset="${meta.image}" type="image/webp" />
+              <img src="${meta.fallbackImage || meta.image}" alt="Field Tile #${meta.tileIndex} - ${meta.label}" class="tile-art-img" loading="lazy" decoding="async" />
+            </picture>
           </div>
         </div>
       </div>
@@ -1181,10 +1184,14 @@ async function startSession() {
     renderStateCards(data.state);
     updateQuickChips(data.state);
 
-    const docRes = await fetch(`${API_BASE}/api/session/${sessionId}/document`);
-    if (docRes.ok) {
-      const docData = await docRes.json();
-      renderDocument(docData.document);
+    if (data.document) {
+      renderDocument(data.document);
+    } else {
+      const docRes = await fetch(`${API_BASE}/api/session/${sessionId}/document`);
+      if (docRes.ok) {
+        const docData = await docRes.json();
+        renderDocument(docData.document);
+      }
     }
   } catch (err) {
     console.error("Session initialization failed:", err);

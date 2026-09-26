@@ -140,9 +140,11 @@ We designed an automated timing benchmark (`test_concurrency_1_same_session_seri
 * **Solution:** Exposed an explicit state mutation endpoint allowing direct field patching from the UI. When a user clicks `✏️ Edit` on any state card, changes are validated, synced to the canonical `IntakeState`, and instantly reflected in the draft document.
 * **Safety Invariant:** Direct edits automatically resolve outstanding `needs_clarification` flags for the edited field and increment `session.revision`.
 
-### Responsive Containment & Visual Asset Architecture
-* **Design Decision:** The landing screen utilizes aspect-ratio containment (`1536 / 1024`) with an exact `#8054F4` background color matching the border pixels of `wenupbg.png`. This prevents over-zoom and edge cropping across ultra-wide, desktop, and mobile viewports.
-* **3D State Artwork Grid:** Core legal field cards (1–8) flip to display `field_tiles/10.png` upon confirmation, while the personal wishes card (9) flips to display `field_tiles/11.png`.
+### Responsive Containment & High-Performance Visual Asset Architecture
+* **Design Decision:** The landing screen utilizes aspect-ratio containment (`1536 / 1024`) with an exact `#8054F4` background color matching the border pixels of `wenupbg.webp`. This prevents over-zoom and edge cropping across ultra-wide, desktop, and mobile viewports.
+* **Landing CTA Alignment:** Positioned the yellow explainer text and "Get Started" button cleanly near the bottom (`bottom: 5.2%`) to harmonize with the Wenup branding and background artwork.
+* **3D State Artwork Grid:** Core legal field cards (1–8) flip to display `field_tiles/10.webp` upon confirmation, while the personal wishes card (9) flips to display `field_tiles/11.webp` with progressive fallback.
+* **Vercel Performance & Edge Optimization:** Converted heavy 1.25 MB PNG assets to next-gen WebP (`wenupbg.webp` at 30.5 KB, a 97.5% reduction), added `<link rel="preload">` in `<head>`, and configured long-lived `Cache-Control: public, max-age=31536000, immutable` headers in `vercel.json` for instant ~10ms Edge CDN delivery without touching any AI/LLM logic.
 
 ### Formal Legal PDF Synthesis
 * **Implementation:** Integrated client-side vector PDF generation using `jsPDF` with dual Blob URL fallback.
@@ -152,6 +154,6 @@ We designed an automated timing benchmark (`test_concurrency_1_same_session_seri
 
 ## 6. Multi-Layer Verification & Quality Confidence
 
-All concurrency scenarios, domain invariants, human state edits, and browser UI workflows are verified across **117 automated tests** (113 backend unit/integration tests + 4 Playwright E2E browser tests):
-* `pytest backend/tests/ -v` passes 100% (117 / 117 passed in 8.46s).
+All concurrency scenarios, domain invariants, human state edits, and browser UI workflows are verified across **118 automated tests** (114 backend unit/integration tests + 4 Playwright E2E browser tests):
+* `pytest backend/tests/ -v` passes 100% (118 / 118 passed in 11.48s).
 

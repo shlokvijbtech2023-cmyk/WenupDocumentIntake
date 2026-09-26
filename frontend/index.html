@@ -7,15 +7,21 @@
   <meta name="description" content="Conversational legal intake assistant drafting a fictional Personal Wishes Document with explicit structured state, deterministic validation, and automatic LLM fallback." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="alternate icon" href="favicon.svg" />
+  <link rel="preload" as="image" href="wenupbg.webp" type="image/webp" fetchpriority="high" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.1.0" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="stylesheet" href="style.css?v=2.3.0" />
 </head>
 <body>
-  <!-- Initial Landing Screen with wenupbg.png Background -->
+  <!-- Initial Landing Screen with Instant WebP Background & Progressive Picture Fallback -->
   <div class="landing-screen" id="landing-screen" role="region" aria-label="Welcome to Wenup">
     <div class="landing-content-frame">
+      <picture class="landing-bg-picture">
+        <source srcset="wenupbg.webp" type="image/webp" />
+        <img src="wenupbg.png" alt="Wenup Document Intake Assistant" class="landing-bg-img" fetchpriority="high" decoding="async" width="1536" height="1024" />
+      </picture>
       <div class="landing-cta-block">
         <div class="landing-explainer-yellow">
           Conversational legal intake assistant.<br />
@@ -415,7 +421,7 @@
     </div>
   </div>
 
-  <script src="jspdf.umd.min.js"></script>
-  <script src="app.js?v=2.1.0"></script>
+  <script src="jspdf.umd.min.js" defer></script>
+  <script src="app.js?v=2.3.0" defer></script>
 </body>
 </html>

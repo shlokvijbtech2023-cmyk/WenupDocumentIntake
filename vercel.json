@@ -17,7 +17,24 @@
     },
     {
       "src": "/field_tiles/(.*)",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      },
       "dest": "/frontend/field_tiles/$1"
+    },
+    {
+      "src": "/(.*\\.(?:webp|png|jpg|jpeg|svg|ico|woff|woff2|map))",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/(.*\\.(?:css|js))",
+      "headers": {
+        "cache-control": "public, max-age=86400, stale-while-revalidate=604800"
+      },
+      "dest": "/frontend/$1"
     },
     {
       "src": "/(getstarted|getstarted\\.html)",

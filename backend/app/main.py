@@ -71,6 +71,7 @@ class CreateSessionResponse(BaseModel):
     state: dict
     progress: dict
     revision: int
+    document: str = ""
 
 
 class MessageRequest(BaseModel):
@@ -122,6 +123,7 @@ def create_session() -> CreateSessionResponse:
         state=session.state.summary_dict(),
         progress=session.state.completion_progress(),
         revision=session.revision,
+        document=generate_document(session.state),
     )
 
 
