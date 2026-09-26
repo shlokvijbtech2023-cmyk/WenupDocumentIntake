@@ -21,16 +21,24 @@
     },
     {
       "src": "/(getstarted|getstarted\\.html)",
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate"
+      },
       "dest": "/frontend/index.html"
     },
     {
       "src": "/(index\\.html)?",
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate"
+      },
       "dest": "/frontend/index.html"
     },
     {
       "src": "/(.*)",
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate"
+      },
       "dest": "/frontend/$1"
     }
   ]
 }
-
