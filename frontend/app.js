@@ -29,12 +29,18 @@ const els = {
   closeArchModalBtn: document.getElementById("close-arch-modal-btn"),
   closeModalFooterBtn: document.getElementById("close-modal-footer-btn"),
 
+  // Tab 1 Chat Completion Card & Buttons
+  chatCompleteCard: document.getElementById("chat-complete-card"),
+  chatDownloadPdfBtn: document.getElementById("chat-download-pdf-btn"),
+  chatViewDocBtn: document.getElementById("chat-view-doc-btn"),
+
   // 3x3 Tile Controls & Finish Options
   toggleFlipAllBtn: document.getElementById("toggle-flip-all-btn"),
   toggleFlipText: document.getElementById("toggle-flip-text"),
   stateFinishBtn: document.getElementById("state-finish-btn"),
   headerFinishBtn: document.getElementById("header-finish-btn"),
   tilesCompleteBanner: document.getElementById("tiles-complete-banner"),
+  bannerDownloadPdfBtn: document.getElementById("banner-download-pdf-btn"),
   bannerViewDocBtn: document.getElementById("banner-view-doc-btn"),
   
   // Telemetry elements
@@ -72,25 +78,29 @@ let globalForceFlipMode = null; // null (auto) | true (all art) | false (all dat
 // ---------- Status & Progress Utilities ----------
 
 function setStatus(label, kind = "ready") {
-  els.statusLabel.textContent = label;
-  els.status.className = `status-pill ${kind}`;
+  if (els.statusLabel) els.statusLabel.textContent = label;
+  if (els.status) els.status.className = `status-pill ${kind}`;
 }
 
 function updateProgress(progress) {
   if (!progress) return;
   latestProgress = progress;
   const { completed_core_fields, total_core_fields, percentage, is_core_complete } = progress;
-  els.progressCount.textContent = `${completed_core_fields} / ${total_core_fields} core fields (${percentage}%)`;
-  els.progressFill.style.width = `${percentage}%`;
+  if (els.progressCount) els.progressCount.textContent = `${completed_core_fields} / ${total_core_fields} core fields (${percentage}%)`;
+  if (els.progressFill) els.progressFill.style.width = `${percentage}%`;
   
   if (is_core_complete) {
-    els.progressFill.classList.add("complete");
-    els.docStatusBadge.textContent = "Ready ✓";
-    els.docStatusBadge.classList.add("complete");
+    if (els.progressFill) els.progressFill.classList.add("complete");
+    if (els.docStatusBadge) {
+      els.docStatusBadge.textContent = "Ready ✓";
+      els.docStatusBadge.classList.add("complete");
+    }
   } else {
-    els.progressFill.classList.remove("complete");
-    els.docStatusBadge.textContent = "Draft";
-    els.docStatusBadge.classList.remove("complete");
+    if (els.progressFill) els.progressFill.classList.remove("complete");
+    if (els.docStatusBadge) {
+      els.docStatusBadge.textContent = "Draft";
+      els.docStatusBadge.classList.remove("complete");
+    }
   }
 
   // Show "Finish Document" option whenever at least 4 core fields are filled or core is complete
@@ -100,9 +110,9 @@ function updateProgress(progress) {
 }
 
 function setInputEnabled(enabled) {
-  els.chatInput.disabled = !enabled;
-  els.sendBtn.disabled = !enabled;
-  if (enabled) {
+  if (els.chatInput) els.chatInput.disabled = !enabled;
+  if (els.sendBtn) els.sendBtn.disabled = !enabled;
+  if (enabled && els.chatInput) {
     els.chatInput.focus();
   }
 }
@@ -156,9 +166,10 @@ function removeTypingIndicator() {
   if (indicator) indicator.remove();
 }
 
-// ---------- Context-Aware Quick Suggestion Chips ----------
+// ---------- Context-Aware Quick Suggestion Chips (Clean & Generic) ----------
 
 function updateQuickChips(state) {
+  if (!els.quickChipsWrapper) return;
   els.quickChipsWrapper.innerHTML = "";
   if (!state) return;
 
@@ -169,41 +180,46 @@ function updateQuickChips(state) {
     const firstClarified = Object.keys(needsClarification)[0];
     if (firstClarified === "has_children") {
       chips.push("Actually, I do have children", "To clarify, I do not have children");
-    } else if (firstClarified.includes("executor")) {
-      chips.push("My executor is my brother James", "Confirm executor as Priya");
+    } else if (firstClarified === "covers_worldwide_assets") {
+      chips.push("Worldwide assets", "UK assets only");
+    } else if (firstClarified.includes("executor.relationship")) {
+      chips.push("Brother", "Sister", "Spouse", "Son", "Daughter", "Friend", "Solicitor");
     }
   } else if (!state.full_name) {
-    chips.push("Sarah Wilson", "David Miller");
+    // No random fake names -- user provides their own name
   } else if (!state.home_address) {
-    chips.push("10 Downing Street, London", "42 Park Lane, Manchester");
+    // No random fake addresses -- user provides their own address
   } else if (state.covers_worldwide_assets === null) {
     chips.push("Yes, cover worldwide assets", "No, UK assets only");
   } else if (state.has_children === null) {
     chips.push("Yes, I have children", "No, I do not have children");
   } else if (state.has_children === true && (!state.children_names || state.children_names.length === 0)) {
-    chips.push("Alice and Daniel", "Oliver and Sophia");
+    chips.push("None");
   } else if (!state.executor?.name) {
-    chips.push("My sister Priya", "My friend Marcus Bennett");
+    // No random fake executor names -- user provides their executor's name
   } else if (!state.executor?.relationship) {
-    chips.push("Sister", "Brother", "Spouse", "Close friend", "Solicitor");
+    chips.push("Brother", "Sister", "Spouse", "Son", "Daughter", "Friend", "Solicitor");
   } else if (!state.gifts_addressed) {
-    chips.push("No specific gifts", "My vintage watch to Tom", "Family heirlooms to Alice");
+    chips.push("No specific gifts", "Skip specific gifts");
   } else if (!state.wishes_addressed) {
-    chips.push("No additional wishes (Finish)", "Play classical music at the memorial service", "✨ Finish Document Now");
+    chips.push("No additional wishes", "Skip additional wishes", "✨ Download PDF & Finish");
   }
 
-  // If core fields are done or nearly done, always provide a finish option
-  if (state.full_name && state.home_address && state.executor?.name && !chips.some(c => c.includes("Finish"))) {
-    chips.push("✨ Finish Document Now");
+  // If core fields are done, offer quick action chips
+  const isCoreDone = state.full_name && state.home_address && (state.has_children === false || (state.children_names && state.children_names.length > 0)) && state.executor?.name && state.executor?.relationship;
+  if (isCoreDone && !chips.some(c => c.includes("Download") || c.includes("Finish"))) {
+    chips.push("📥 Download PDF", "✨ Finish Document");
   }
 
   chips.forEach((chipText) => {
     const chipBtn = document.createElement("button");
     chipBtn.type = "button";
-    chipBtn.className = `quick-chip ${chipText.includes("Finish") ? "finish-chip" : ""}`;
+    chipBtn.className = `quick-chip ${chipText.includes("Finish") || chipText.includes("Download") ? "finish-chip" : ""}`;
     chipBtn.textContent = chipText;
     chipBtn.addEventListener("click", () => {
-      if (chipText.includes("Finish Document Now") || chipText.includes("Finish)")) {
+      if (chipText.includes("Download PDF")) {
+        downloadDocumentAsPdf();
+      } else if (chipText.includes("Finish")) {
         finishDocumentNow();
       } else {
         els.chatInput.value = chipText;
@@ -240,6 +256,7 @@ function isFieldConfirmed(metaKey, rawVal, state, flagged) {
 function renderStateCards(state, recentlyUpdated = []) {
   if (!state) return;
   latestState = state;
+  if (!els.stateCardsGrid) return;
   els.stateCardsGrid.innerHTML = "";
   const flagged = state.needs_clarification || {};
 
@@ -255,14 +272,32 @@ function renderStateCards(state, recentlyUpdated = []) {
     "additional_wishes": state.additional_wishes,
   };
 
+  // Check how many of the 9 fields are confirmed
   let totalConfirmedCount = 0;
+  FIELD_METADATA.forEach((meta) => {
+    const rawVal = valuesMap[meta.key];
+    if (isFieldConfirmed(meta.key, rawVal, state, flagged)) {
+      totalConfirmedCount++;
+    }
+  });
+
+  const allNineFilled = totalConfirmedCount === 9 || (
+    Boolean(state.full_name) &&
+    Boolean(state.home_address) &&
+    state.covers_worldwide_assets !== null &&
+    state.has_children !== null &&
+    (state.has_children === false || (Array.isArray(state.children_names) && state.children_names.length > 0)) &&
+    Boolean(state.executor?.name) &&
+    Boolean(state.executor?.relationship) &&
+    Boolean(state.gifts_addressed || (Array.isArray(state.specific_gifts) && state.specific_gifts.length > 0)) &&
+    Boolean(state.wishes_addressed || state.additional_wishes)
+  );
 
   FIELD_METADATA.forEach((meta) => {
     const rawVal = valuesMap[meta.key];
     const isClarify = Boolean(flagged[meta.key]);
     const isUpdated = recentlyUpdated.includes(meta.key);
     const confirmed = isFieldConfirmed(meta.key, rawVal, state, flagged);
-    if (confirmed) totalConfirmedCount++;
 
     let statusType = "pending";
     let statusText = "Pending ◯";
@@ -290,15 +325,16 @@ function renderStateCards(state, recentlyUpdated = []) {
       }
     }
 
-    // Determine whether card is flipped to back face (showing artwork tile)
+    // Determine whether card is flipped to back face (showing illustrated artwork tile)
     let shouldBeFlipped = false;
     if (globalForceFlipMode !== null) {
       shouldBeFlipped = globalForceFlipMode;
     } else if (manualFlippedCards.has(meta.key)) {
       shouldBeFlipped = manualFlippedCards.get(meta.key);
     } else {
-      // Auto flip once answered/confirmed!
-      shouldBeFlipped = confirmed;
+      // When all 9 fields are completed, ALL 9 turn to show their cards 1 - 9!
+      // Or auto flip once individually confirmed
+      shouldBeFlipped = allNineFilled || confirmed;
     }
 
     const cardContainer = document.createElement("div");
@@ -327,7 +363,7 @@ function renderStateCards(state, recentlyUpdated = []) {
           </div>
         </div>
 
-        <!-- BACK FACE: Illustrated Field Tile Artwork -->
+        <!-- BACK FACE: Illustrated Field Tile Artwork (1 - 9) -->
         <div class="state-card-face state-card-back">
           <div class="tile-image-wrapper">
             <img src="${meta.image}" alt="Field Tile #${meta.tileIndex} - ${meta.label}" class="tile-art-img" loading="lazy" />
@@ -358,20 +394,22 @@ function renderStateCards(state, recentlyUpdated = []) {
     els.stateCardsGrid.appendChild(cardContainer);
   });
 
-  // Check if all 9 fields are confirmed/addressed
-  const allFilled = totalConfirmedCount === 9 || (state.is_core_complete && state.gifts_addressed && state.wishes_addressed);
+  // Reveal Tab 1 & Tab 2 Completion cards when all 9 fields are done
+  if (els.chatCompleteCard) {
+    els.chatCompleteCard.style.display = (allNineFilled || totalConfirmedCount >= 7) ? "flex" : "none";
+  }
   if (els.tilesCompleteBanner) {
-    els.tilesCompleteBanner.style.display = allFilled ? "flex" : "none";
+    els.tilesCompleteBanner.style.display = allNineFilled ? "flex" : "none";
   }
 
   // Update toggle flip all button label
   if (els.toggleFlipText) {
-    if (globalForceFlipMode === true) {
+    if (globalForceFlipMode === true || allNineFilled) {
       els.toggleFlipText.textContent = "Flip All to Data";
-      els.toggleFlipAllBtn.classList.add("active");
+      if (els.toggleFlipAllBtn) els.toggleFlipAllBtn.classList.add("active");
     } else if (globalForceFlipMode === false) {
       els.toggleFlipText.textContent = "Flip All to Art";
-      els.toggleFlipAllBtn.classList.remove("active");
+      if (els.toggleFlipAllBtn) els.toggleFlipAllBtn.classList.remove("active");
     } else {
       els.toggleFlipText.textContent = totalConfirmedCount >= 5 ? "Flip All to Data" : "Flip All to Art";
     }
@@ -380,87 +418,303 @@ function renderStateCards(state, recentlyUpdated = []) {
 
 function renderDocument(doc) {
   lastDocumentContent = doc;
-  els.documentText.textContent = doc || "Draft document will appear here once intake begins.";
+  if (els.documentText) {
+    els.documentText.textContent = doc || "Draft document will appear here once intake begins.";
+  }
+}
+
+// ---------- Professional PDF Document Generator ----------
+
+function downloadDocumentAsPdf() {
+  if (!lastDocumentContent) {
+    addSystemNote("⚠️ Please start your intake interview first to generate draft document content.", true);
+    return;
+  }
+
+  const testatorName = latestState?.full_name || "Draft";
+  const safeName = testatorName.replace(/[^a-zA-Z0-9]/g, "_");
+  const fileName = `Personal_Wishes_Document_${safeName}.pdf`;
+
+  // 1. Generate via jsPDF if available
+  if (window.jspdf && window.jspdf.jsPDF) {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4"
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 44;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      // Header Banner (Wenup Brand Purple #2D006B)
+      doc.setFillColor(45, 0, 107);
+      doc.rect(0, 0, pageWidth, 56, "F");
+
+      // Brand Wordmark
+      doc.setTextColor(226, 248, 50); // #E2F832 Lime
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Wenup", margin, 36);
+
+      // Header Subtitle
+      doc.setTextColor(245, 240, 255);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.text("Personal Wishes Document • Confidential Draft", pageWidth - margin, 36, { align: "right" });
+
+      y = 82;
+
+      // Document Title
+      doc.setTextColor(36, 0, 87);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("PERSONAL WISHES DOCUMENT", margin, y);
+      y += 18;
+
+      // Metadata line
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(95, 85, 119);
+      doc.text(`Testator: ${testatorName} | Generated: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`, margin, y);
+      y += 16;
+
+      // Legal Disclaimer Card
+      doc.setFillColor(254, 246, 236); // #FEF6EC
+      doc.setDrawColor(250, 215, 160); // #FAD7A0
+      doc.roundedRect(margin, y, contentWidth, 36, 4, 4, "FD");
+
+      doc.setTextColor(167, 78, 6);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.text("DEMONSTRATION ONLY — NOT LEGAL ADVICE", margin + 10, y + 13);
+      doc.setFont("helvetica", "normal");
+      doc.text("This draft was compiled by the Wenup Conversational Intake Assistant. It must be reviewed by a qualified solicitor before formal execution.", margin + 10, y + 25);
+
+      y += 50;
+
+      // Content formatting from raw document string
+      doc.setTextColor(30, 20, 50);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setLineHeightFactor(1.4);
+
+      const rawLines = lastDocumentContent.split("\n");
+
+      for (let i = 0; i < rawLines.length; i++) {
+        const rawLine = rawLines[i].trim();
+
+        if (!rawLine) {
+          y += 8;
+          continue;
+        }
+
+        // Page break check
+        if (y > pageHeight - 65) {
+          doc.addPage();
+          y = margin + 20;
+        }
+
+        // Skip title & disclaimer lines that we rendered natively in header
+        if (rawLine.startsWith("PERSONAL WISHES DOCUMENT") || rawLine.startsWith("Prepared:")) {
+          continue;
+        }
+        if (rawLine.startsWith("This is a FICTIONAL document")) {
+          continue;
+        }
+
+        // Section Headers (Uppercase words without colons)
+        if (rawLine === rawLine.toUpperCase() && rawLine.length > 3 && !rawLine.includes(":") && !rawLine.startsWith("[")) {
+          y += 6;
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(45, 0, 107);
+          doc.setFontSize(11);
+          doc.text(rawLine, margin, y);
+          y += 14;
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 20, 50);
+          doc.setFontSize(10);
+        } else {
+          // Wrapped body text
+          const splitLines = doc.splitTextToSize(rawLine, contentWidth);
+          for (let s = 0; s < splitLines.length; s++) {
+            if (y > pageHeight - 65) {
+              doc.addPage();
+              y = margin + 20;
+            }
+            doc.text(splitLines[s], margin, y);
+            y += 14;
+          }
+        }
+      }
+
+      // Add Execution & Signatures Section
+      y += 12;
+      if (y > pageHeight - 110) {
+        doc.addPage();
+        y = margin + 20;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(45, 0, 107);
+      doc.setFontSize(11);
+      doc.text("EXECUTION & SIGNATURES", margin, y);
+      y += 18;
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(95, 85, 119);
+      doc.setFontSize(9);
+      doc.text("Signed by the Testator in the presence of witnesses:", margin, y);
+      y += 24;
+
+      doc.setDrawColor(180, 170, 205);
+      doc.line(margin, y, margin + 200, y);
+      doc.line(pageWidth - margin - 200, y, pageWidth - margin, y);
+      y += 12;
+      doc.text("Testator Signature", margin, y);
+      doc.text("Date", pageWidth - margin - 200, y);
+
+      // Number pages in footer
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(8);
+        doc.setTextColor(132, 123, 155);
+        doc.text(`Wenup Document Intake Assistant • Page ${p} of ${totalPages}`, pageWidth / 2, pageHeight - 22, { align: "center" });
+      }
+
+      doc.save(fileName);
+      addSystemNote(`📥 PDF downloaded successfully: ${fileName}`);
+      return;
+    } catch (err) {
+      console.warn("jsPDF export error, falling back to print view", err);
+    }
+  }
+
+  // 2. Fallback: Styled Browser Print / Save-as-PDF window
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${fileName}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Georgia, serif; max-width: 780px; margin: 30px auto; padding: 24px; color: #1c0044; line-height: 1.6; }
+          .header { background: #2D006B; color: #fff; padding: 18px 24px; border-radius: 8px; margin-bottom: 24px; }
+          .brand { font-size: 24px; font-weight: bold; color: #E2F832; }
+          .disclaimer { background: #FEF6EC; border: 1px solid #FAD7A0; padding: 12px; font-size: 12px; margin: 16px 0; border-radius: 6px; color: #a74e06; }
+          pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; background: #faf8f5; padding: 20px; border-radius: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">Wenup</div>
+          <div>Personal Wishes Document (Draft)</div>
+        </div>
+        <div class="disclaimer"><strong>Demonstration Only:</strong> This document is generated for demonstration purposes and is not formal legal advice.</div>
+        <pre>${lastDocumentContent}</pre>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
 }
 
 // ---------- Telemetry Rendering ----------
 
 function updateTelemetry(data, state) {
   if (!data) return;
-  els.telemetryProvider.textContent = data.llm_provider_used || "primary";
-  els.telemetryRevision.textContent = String(data.revision || 0);
-  els.telemetryComplete.textContent = data.core_complete ? "Yes (Draft authoritatively generated)" : "In Progress";
+  if (els.telemetryProvider) els.telemetryProvider.textContent = data.llm_provider_used || "primary";
+  if (els.telemetryRevision) els.telemetryRevision.textContent = String(data.revision || 0);
+  if (els.telemetryComplete) els.telemetryComplete.textContent = data.core_complete ? "Yes (Draft authoritatively generated)" : "In Progress";
   
-  els.telemetryApplied.textContent = (data.applied_fields && data.applied_fields.length)
-    ? data.applied_fields.join(", ") : "None this turn";
-    
-  els.telemetryClarified.textContent = (data.clarifications && data.clarifications.length)
-    ? data.clarifications.join(", ") : "None";
+  if (els.telemetryApplied) {
+    els.telemetryApplied.textContent = (data.applied_fields && data.applied_fields.length)
+      ? data.applied_fields.join(", ") : "None this turn";
+  }
+  if (els.telemetryClarified) {
+    els.telemetryClarified.textContent = (data.clarifications && data.clarifications.length)
+      ? data.clarifications.join(", ") : "None";
+  }
+  if (els.telemetryRejected) {
+    els.telemetryRejected.textContent = (data.rejected_fields && data.rejected_fields.length)
+      ? JSON.stringify(data.rejected_fields) : "None (All updates passed validation)";
+  }
 
-  els.telemetryRejected.textContent = (data.rejected_fields && data.rejected_fields.length)
-    ? data.rejected_fields.map(r => `${r.field} (${r.reason})`).join(", ") : "None";
-
-  if (state) {
-    els.telemetryJsonRaw.textContent = JSON.stringify(state, null, 2);
+  if (els.telemetryJsonRaw) {
+    const rawPayload = {
+      llm_provider: data.llm_provider_used,
+      turn_number: currentTurnCount,
+      applied_fields: data.applied_fields || [],
+      clarifications: data.clarifications || [],
+      rejected_fields: data.rejected_fields || [],
+      canonical_state: state || {},
+      progress: latestProgress || {},
+    };
+    els.telemetryJsonRaw.textContent = JSON.stringify(rawPayload, null, 2);
   }
 }
 
-// ---------- Session Operations ----------
+// ---------- API Network Client & Session Lifecycle ----------
 
 async function startSession() {
   setStatus("Connecting…", "connecting");
   setInputEnabled(false);
   els.chatLog.innerHTML = "";
+  manualFlippedCards.clear();
+  globalForceFlipMode = null;
+  currentTurnCount = 0;
+  if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
+  if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";
 
   try {
-    const res = await fetch(`${API_BASE}/api/session`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+
     sessionId = data.session_id;
-    currentTurnCount = 0;
+    currentTurnCount = 1;
+    if (els.turnCounter) els.turnCounter.textContent = `Turn 01`;
+    setStatus("Connected", "ready");
 
     addMessage("assistant", data.assistant_message);
-    renderStateCards(data.state);
     updateProgress(data.progress);
+    renderStateCards(data.state);
     updateQuickChips(data.state);
-    updateTelemetry({
-      llm_provider_used: "ready",
-      revision: data.revision,
-      core_complete: data.progress?.is_core_complete,
-      applied_fields: [],
-      clarifications: [],
-      rejected_fields: []
-    }, data.state);
 
-    // Fetch initial document
     const docRes = await fetch(`${API_BASE}/api/session/${sessionId}/document`);
     if (docRes.ok) {
       const docData = await docRes.json();
       renderDocument(docData.document);
     }
-
-    // Health / Provider check
-    const healthRes = await fetch(`${API_BASE}/api/health`);
-    if (healthRes.ok) {
-      const healthData = await healthRes.json();
-      const providerName = healthData.llm_provider || "mock";
-      setStatus(`Connected (${providerName})`, "ready");
-    } else {
-      setStatus("Connected", "ready");
-    }
-
-    setInputEnabled(true);
   } catch (err) {
-    setStatus("Backend Offline", "error");
-    addSystemNote("Unable to connect to the backend server. Please make sure the FastAPI server is running on localhost:8000.", true);
+    console.error("Session initialization failed:", err);
+    setStatus("Offline Mode", "offline");
+    addSystemNote("⚠️ Could not reach FastAPI backend at " + (API_BASE || window.location.origin) + ". Retrying…", true);
+  } finally {
+    setInputEnabled(true);
   }
 }
 
-async function sendMessage(message) {
-  if (!sessionId) return;
-  addMessage("user", message);
+async function sendMessage(text) {
+  if (!sessionId || !text) return;
+
+  addMessage("user", text);
   currentTurnCount++;
-  els.turnCounter.textContent = `Turn #${currentTurnCount}`;
+  if (els.turnCounter) els.turnCounter.textContent = `Turn ${String(currentTurnCount).padStart(2, "0")}`;
+  setStatus("Extracting & Validating…", "busy");
   setInputEnabled(false);
   showTypingIndicator();
 
@@ -468,35 +722,34 @@ async function sendMessage(message) {
     const res = await fetch(`${API_BASE}/api/session/${sessionId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message: text }),
     });
 
     removeTypingIndicator();
 
     if (!res.ok) {
-      const detail = await res.json().catch(() => ({}));
-      addSystemNote(`Request error: ${detail.detail || res.statusText}`, true);
-      return;
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.detail || `HTTP ${res.status}`);
     }
 
     const data = await res.json();
+    setStatus("Connected", "ready");
+
     addMessage("assistant", data.assistant_message);
     renderStateCards(data.state, data.applied_fields || []);
     renderDocument(data.document);
     updateProgress(data.progress);
-    updateQuickChips(data.state);
     updateTelemetry(data, data.state);
+    updateQuickChips(data.state);
 
-    if (data.llm_provider_used === "mock_fallback") {
-      setStatus("Degraded Mode (Mock Fallback)", "fallback");
-    }
-
-    if (data.core_complete && currentTurnCount > 1 && !data.state.wishes_addressed) {
-      addSystemNote("✨ All core required fields are now confirmed! You can provide specific gifts, additional wishes, or any corrections.");
+    if (data.clarifications && data.clarifications.length > 0) {
+      addSystemNote(`⚠️ Need follow-up: ${data.clarifications.join("; ")}`);
     }
   } catch (err) {
     removeTypingIndicator();
-    addSystemNote("Network communication error. Please retry your message.", true);
+    console.error("Failed to post message:", err);
+    setStatus("Error", "offline");
+    addSystemNote(`⚠️ Error processing message: ${err.message}`, true);
   } finally {
     setInputEnabled(true);
   }
@@ -505,7 +758,6 @@ async function sendMessage(message) {
 async function finishDocumentNow() {
   if (!sessionId) return;
   
-  // If additional wishes or gifts are not yet addressed, send a finalization message
   if (latestState && !latestState.wishes_addressed) {
     await sendMessage("No additional wishes. Please finalize and generate the draft document.");
   }
@@ -517,24 +769,23 @@ async function finishDocumentNow() {
     renderStateCards(latestState);
   }
 
-  // Switch to Draft Document Tab
-  const docTabBtn = document.getElementById("tab-doc-btn");
-  if (docTabBtn) {
-    docTabBtn.click();
-  }
+  // Reveal Tab 1 complete card
+  if (els.chatCompleteCard) els.chatCompleteCard.style.display = "flex";
 
-  addSystemNote("✨ Document finalized! All confirmed fields are now compiled into your draft Personal Wishes Document.");
+  addSystemNote("✨ Document finalized! All 9 confirmed fields are now compiled into your draft Personal Wishes Document.");
 }
 
 // ---------- Event Listeners ----------
 
-els.chatForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const val = els.chatInput.value.trim();
-  if (!val || !sessionId) return;
-  els.chatInput.value = "";
-  sendMessage(val);
-});
+if (els.chatForm) {
+  els.chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const val = els.chatInput.value.trim();
+    if (!val || !sessionId) return;
+    els.chatInput.value = "";
+    sendMessage(val);
+  });
+}
 
 if (els.toggleFlipAllBtn) {
   els.toggleFlipAllBtn.addEventListener("click", () => {
@@ -558,6 +809,23 @@ if (els.headerFinishBtn) {
   els.headerFinishBtn.addEventListener("click", finishDocumentNow);
 }
 
+// Tab 1 Download PDF & View Doc
+if (els.chatDownloadPdfBtn) {
+  els.chatDownloadPdfBtn.addEventListener("click", downloadDocumentAsPdf);
+}
+
+if (els.chatViewDocBtn) {
+  els.chatViewDocBtn.addEventListener("click", () => {
+    const docTabBtn = document.getElementById("tab-doc-btn");
+    if (docTabBtn) docTabBtn.click();
+  });
+}
+
+// Tab 2 Banner Download PDF & View Doc
+if (els.bannerDownloadPdfBtn) {
+  els.bannerDownloadPdfBtn.addEventListener("click", downloadDocumentAsPdf);
+}
+
 if (els.bannerViewDocBtn) {
   els.bannerViewDocBtn.addEventListener("click", () => {
     const docTabBtn = document.getElementById("tab-doc-btn");
@@ -565,6 +833,7 @@ if (els.bannerViewDocBtn) {
   });
 }
 
+// Tab Switching
 els.tabBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
     els.tabBtns.forEach((b) => {
@@ -582,32 +851,28 @@ els.tabBtns.forEach((btn) => {
   });
 });
 
-els.copyDocBtn.addEventListener("click", async () => {
-  if (!lastDocumentContent) return;
-  try {
-    await navigator.clipboard.writeText(lastDocumentContent);
-    els.copyBtnText.textContent = "Copied! ✓";
-    setTimeout(() => {
-      els.copyBtnText.textContent = "Copy Text";
-    }, 2000);
-  } catch (err) {
-    alert("Unable to copy to clipboard automatically.");
-  }
-});
+// Copy Text Button
+if (els.copyDocBtn) {
+  els.copyDocBtn.addEventListener("click", async () => {
+    if (!lastDocumentContent) return;
+    try {
+      await navigator.clipboard.writeText(lastDocumentContent);
+      els.copyBtnText.textContent = "Copied! ✓";
+      setTimeout(() => {
+        els.copyBtnText.textContent = "Copy Text";
+      }, 2000);
+    } catch (err) {
+      alert("Unable to copy to clipboard automatically.");
+    }
+  });
+}
 
-els.downloadDocBtn.addEventListener("click", () => {
-  if (!lastDocumentContent) return;
-  const blob = new Blob([lastDocumentContent], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Personal_Wishes_Draft_${new Date().toISOString().slice(0, 10)}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
+// Download PDF Button (Tab 2)
+if (els.downloadDocBtn) {
+  els.downloadDocBtn.addEventListener("click", downloadDocumentAsPdf);
+}
 
+// Reset Session Button
 async function resetSession() {
   if (!sessionId) return;
   const confirmed = confirm("Are you sure you want to discard this intake session and start fresh? All in-memory state will be cleared.");
@@ -621,25 +886,36 @@ async function resetSession() {
   startSession();
 }
 
-els.resetBtn.addEventListener("click", resetSession);
+if (els.resetBtn) {
+  els.resetBtn.addEventListener("click", resetSession);
+}
 
-els.archModalBtn.addEventListener("click", () => {
-  els.archModal.hidden = false;
-});
+// Architecture Modal
+if (els.archModalBtn) {
+  els.archModalBtn.addEventListener("click", () => {
+    if (els.archModal) els.archModal.hidden = false;
+  });
+}
 
-els.closeArchModalBtn.addEventListener("click", () => {
-  els.archModal.hidden = true;
-});
+if (els.closeArchModalBtn) {
+  els.closeArchModalBtn.addEventListener("click", () => {
+    if (els.archModal) els.archModal.hidden = true;
+  });
+}
 
-els.closeModalFooterBtn.addEventListener("click", () => {
-  els.archModal.hidden = true;
-});
+if (els.closeModalFooterBtn) {
+  els.closeModalFooterBtn.addEventListener("click", () => {
+    if (els.archModal) els.archModal.hidden = true;
+  });
+}
 
-els.archModal.addEventListener("click", (e) => {
-  if (e.target === els.archModal) {
-    els.archModal.hidden = true;
-  }
-});
+if (els.archModal) {
+  els.archModal.addEventListener("click", (e) => {
+    if (e.target === els.archModal) {
+      els.archModal.hidden = true;
+    }
+  });
+}
 
 // Initialize on page load
 renderStateCards({ executor: {} });

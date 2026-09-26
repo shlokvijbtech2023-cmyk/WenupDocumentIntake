@@ -97,6 +97,32 @@
 
         <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
 
+        <!-- Chat Completion Action Card (shown in 1st tab when all 9 fields or intake is complete) -->
+        <div class="chat-complete-card" id="chat-complete-card" style="display: none;">
+          <div class="chat-complete-left">
+            <span class="chat-complete-icon">🎉</span>
+            <div class="chat-complete-info">
+              <strong>All 9 Fields Completed!</strong>
+              <span>Your Personal Wishes Document is fully drafted and ready to download.</span>
+            </div>
+          </div>
+          <div class="chat-complete-actions">
+            <button type="button" class="chat-download-pdf-btn" id="chat-download-pdf-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="12" y2="18"></line>
+                <line x1="15" y1="15" x2="12" y2="18"></line>
+              </svg>
+              <span>Download PDF</span>
+            </button>
+            <button type="button" class="chat-view-doc-btn" id="chat-view-doc-btn">
+              <span>View Document →</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Dynamic Context Suggestions -->
         <div class="quick-chips-wrapper" id="quick-chips-wrapper" aria-label="Suggested quick answers"></div>
 
@@ -194,7 +220,17 @@
                 <strong>All 9 Field Tiles Unlocked!</strong> Your Personal Wishes Document is fully drafted.
               </div>
             </div>
-            <button type="button" class="banner-action-btn" id="banner-view-doc-btn">View Final Document →</button>
+            <div class="banner-actions-group">
+              <button type="button" class="banner-action-btn primary" id="banner-download-pdf-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+              <button type="button" class="banner-action-btn" id="banner-view-doc-btn">View Document →</button>
+            </div>
           </div>
 
           <div class="state-cards-grid" id="state-cards-grid"></div>
@@ -215,13 +251,15 @@
                 </svg>
                 <span id="copy-btn-text">Copy Text</span>
               </button>
-              <button class="doc-action-btn" id="download-doc-btn" title="Download text file">
+              <button class="doc-action-btn primary-doc-btn" id="download-doc-btn" title="Download Formatted PDF Document">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="12" y2="18"></line>
+                  <line x1="15" y1="15" x2="12" y2="18"></line>
                 </svg>
-                <span>Download .txt</span>
+                <span>Download PDF</span>
               </button>
             </div>
           </div>
@@ -356,6 +394,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

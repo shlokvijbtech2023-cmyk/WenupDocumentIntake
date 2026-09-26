@@ -454,6 +454,126 @@ html, body {
   color: #C5221F;
 }
 
+/* Chat Completion Action Card */
+.chat-complete-card {
+  margin: 8px 18px 12px;
+  background: linear-gradient(135deg, #2D006B 0%, #3E058C 100%);
+  border: 1.5px solid var(--wenup-lime);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 6px 20px rgba(45, 0, 107, 0.25), 0 0 15px rgba(226, 248, 50, 0.2);
+  animation: bannerSlideDown 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.chat-complete-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-complete-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.chat-complete-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-complete-info strong {
+  color: var(--wenup-lime);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.chat-complete-info span {
+  color: #E2DAF7;
+  font-size: 12px;
+}
+
+.chat-complete-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-download-pdf-btn {
+  background: var(--wenup-lime);
+  color: var(--wenup-purple-deep);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-download-pdf-btn:hover {
+  background: var(--wenup-lime-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(226, 248, 50, 0.45);
+}
+
+.chat-view-doc-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chat-view-doc-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: #FFFFFF;
+}
+
+.banner-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.banner-action-btn.primary {
+  background: var(--wenup-lime);
+  color: var(--wenup-purple-deep);
+  border: none;
+}
+
+.banner-action-btn.primary:hover {
+  background: var(--wenup-lime-hover);
+  box-shadow: 0 2px 10px rgba(226, 248, 50, 0.4);
+}
+
+.primary-doc-btn {
+  background: var(--wenup-purple) !important;
+  color: var(--wenup-lime) !important;
+  border-color: var(--wenup-purple-light) !important;
+  font-weight: 700 !important;
+}
+
+.primary-doc-btn:hover {
+  background: var(--wenup-purple-mid) !important;
+  border-color: var(--wenup-lime) !important;
+  box-shadow: 0 2px 10px rgba(45, 0, 107, 0.25) !important;
+}
+
 /* Quick Suggestion Chips */
 .quick-chips-wrapper {
   display: flex;
