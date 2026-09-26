@@ -1271,6 +1271,7 @@ html, body {
   flex-direction: column;
   justify-content: center;
   min-height: 42px;
+  overflow: hidden;
 }
 
 .state-card-value {
@@ -1279,8 +1280,20 @@ html, body {
   font-weight: 500;
   color: var(--text-primary);
   word-break: break-word;
+  overflow-wrap: anywhere;
   line-height: 1.35;
   padding: 2px 0;
+  max-height: 68px;
+  overflow-y: auto;
+}
+
+.state-card-value::-webkit-scrollbar {
+  width: 3px;
+}
+
+.state-card-value::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
 }
 
 .state-card-value.empty {

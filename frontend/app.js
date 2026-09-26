@@ -77,6 +77,7 @@ let activeEditingField = null; // Key of field currently in human edit mode
 // Track individual card flip preferences (overrides auto)
 const manualFlippedCards = new Map(); // key -> boolean
 let globalForceFlipMode = null; // null (auto) | true (all art) | false (all data)
+let isVerifiedAndFinalized = false; // When all 9 fields are filled, cards stay on front until user verifies
 
 // ---------- Status & Progress Utilities ----------
 
@@ -208,21 +209,39 @@ function updateQuickChips(state) {
     chips.push("No additional wishes", "Skip additional wishes", "✨ Download PDF & Finish");
   }
 
-  // If core fields are done, offer quick action chips
-  const isCoreDone = state.full_name && state.home_address && (state.has_children === false || (state.children_names && state.children_names.length > 0)) && state.executor?.name && state.executor?.relationship;
-  if (isCoreDone && !chips.some(c => c.includes("Download") || c.includes("Finish"))) {
-    chips.push("📥 Download PDF", "✨ Finish Document");
+  // Check if all 9 fields are complete
+  const allNineDone = Boolean(
+    state.full_name &&
+    state.home_address &&
+    state.covers_worldwide_assets !== null &&
+    state.has_children !== null &&
+    (state.has_children === false || (Array.isArray(state.children_names) && state.children_names.length > 0)) &&
+    state.executor?.name &&
+    state.executor?.relationship &&
+    state.gifts_addressed &&
+    state.wishes_addressed
+  );
+
+  if (allNineDone && !isVerifiedAndFinalized) {
+    chips.length = 0; // Clear other chips
+    chips.push("Everything is verified ✓", "📥 Download PDF");
+  } else {
+    // If core fields are done, offer quick action chips
+    const isCoreDone = state.full_name && state.home_address && (state.has_children === false || (state.children_names && state.children_names.length > 0)) && state.executor?.name && state.executor?.relationship;
+    if (isCoreDone && !chips.some(c => c.includes("Download") || c.includes("Finish"))) {
+      chips.push("📥 Download PDF", "✨ Finish Document");
+    }
   }
 
   chips.forEach((chipText) => {
     const chipBtn = document.createElement("button");
     chipBtn.type = "button";
-    chipBtn.className = `quick-chip ${chipText.includes("Finish") || chipText.includes("Download") ? "finish-chip" : ""}`;
+    chipBtn.className = `quick-chip ${chipText.includes("Finish") || chipText.includes("Download") || chipText.includes("verified") ? "finish-chip" : ""}`;
     chipBtn.textContent = chipText;
     chipBtn.addEventListener("click", () => {
       if (chipText.includes("Download PDF")) {
         downloadDocumentAsPdf();
-      } else if (chipText.includes("Finish")) {
+      } else if (chipText.includes("Finish") || chipText.includes("verified")) {
         finishDocumentNow();
       } else {
         els.chatInput.value = chipText;
@@ -373,15 +392,15 @@ function renderStateCards(state, recentlyUpdated = []) {
     }
 
     // Determine whether card is flipped to back face (showing illustrated artwork tile)
-    // ONLY flip at the end when all 9 tiles turn from pending to completed (or when finalized)
+    // Keep cards on front face so the user has time to view and verify all field values.
+    // ONLY flip all cards when verified/finalized!
     let shouldBeFlipped = false;
     if (isEditing) {
       shouldBeFlipped = false; // Always show front face when editing
     } else if (globalForceFlipMode !== null) {
       shouldBeFlipped = globalForceFlipMode;
     } else {
-      // Flip all cards ONLY when all 9 fields are fully completed
-      shouldBeFlipped = allNineFilled;
+      shouldBeFlipped = Boolean(isVerifiedAndFinalized);
     }
 
     const cardContainer = document.createElement("div");
@@ -1236,6 +1255,11 @@ async function sendMessage(text) {
     updateTelemetry(data, data.state);
     updateQuickChips(data.state);
 
+    const isVerificationWord = /\b(verified|looks good|ready|confirm|finalize|no edits|perfect|everything is verified)\b/i.test(text);
+    if (data.progress && data.progress.is_all_complete && isVerificationWord && !isVerifiedAndFinalized) {
+      finishDocumentNow();
+    }
+
     if (data.clarifications && data.clarifications.length > 0) {
       addSystemNote(`⚠️ Need follow-up: ${data.clarifications.join("; ")}`);
     }
@@ -1256,7 +1280,8 @@ async function finishDocumentNow() {
     await sendMessage("No additional wishes. Please finalize and generate the draft document.");
   }
 
-  // Force all 9 cards to flip to Art mode
+  // Set verified & finalized and force all 9 cards to flip to Art mode
+  isVerifiedAndFinalized = true;
   globalForceFlipMode = true;
   manualFlippedCards.clear();
   activeEditingField = null;
@@ -1374,6 +1399,7 @@ async function resetSession() {
   lastDocumentContent = "";
   manualFlippedCards.clear();
   globalForceFlipMode = null;
+  isVerifiedAndFinalized = false;
   activeEditingField = null;
   if (els.chatCompleteCard) els.chatCompleteCard.style.display = "none";
   if (els.tilesCompleteBanner) els.tilesCompleteBanner.style.display = "none";
