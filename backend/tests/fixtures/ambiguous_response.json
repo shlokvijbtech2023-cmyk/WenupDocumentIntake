@@ -1,0 +1,6 @@
+{
+  "updates": [
+    {"field": "covers_worldwide_assets", "value": null, "status": "clarify", "note": "user said 'maybe', not a clear yes or no"}
+  ],
+  "assistant_message": "No problem -- just to be clear, should this document cover your assets worldwide, or only in your home country?"
+}

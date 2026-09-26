@@ -1,0 +1,7 @@
+{
+  "updates": [
+    {"field": "has_children", "value": false, "status": "set", "is_correction": false},
+    {"field": "children_names", "value": ["Alice", "Bob"], "status": "set", "is_correction": false}
+  ],
+  "assistant_message": "Got it -- who is your executor?"
+}

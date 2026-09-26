@@ -1,0 +1,6 @@
+{
+  "updates": [
+    {"field": "children_names", "value": ["Mia"], "status": "set", "is_correction": false}
+  ],
+  "assistant_message": "Noted, Mia will be added."
+}

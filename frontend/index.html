@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wenup — Document Intake Assistant</title>
+  <meta name="description" content="Conversational legal intake assistant drafting a fictional Personal Wishes Document with explicit structured state, deterministic validation, and automatic LLM fallback." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Brand Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <a href="/" class="brand-logo" aria-label="Wenup Home">
+          <svg class="wenup-wordmark" viewBox="0 0 160 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Wenup">
+            <text x="0" y="36" font-family="'Fraunces', Georgia, serif" font-size="42" font-weight="700" fill="currentColor" letter-spacing="-1.5">Wenup</text>
+            <circle cx="150" cy="14" r="5" fill="#E2F832" />
+          </svg>
+        </a>
+        <div class="header-divider"></div>
+        <div class="header-title-block">
+          <div class="app-badge">Engineering Technical Test</div>
+          <h1 class="app-title">Document Intake Assistant</h1>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="progress-container" id="progress-container" title="Core Intake Completion Progress">
+          <div class="progress-labels">
+            <span class="progress-title">Intake Progress</span>
+            <span class="progress-count" id="progress-count">0 / 7 core fields</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="status-pill connecting" id="connection-status" title="Current backend & LLM status">
+          <span class="status-dot"></span>
+          <span class="status-label" id="status-label">Connecting…</span>
+        </div>
+
+        <button class="icon-btn secondary-btn" id="arch-modal-btn" title="View Architecture & Engineering Pipeline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Architecture</span>
+        </button>
+
+        <button class="icon-btn secondary-btn danger-hover" id="reset-session-btn" title="Discard transient session data and start fresh">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span>Start Over</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main 2-Column Workspace -->
+    <main class="workspace-grid">
+      <!-- Left Column: Conversational Interview -->
+      <section class="pane interview-pane" aria-labelledby="interview-heading">
+        <div class="pane-header">
+          <div class="pane-title-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <h2 id="interview-heading">Conversational Intake</h2>
+          </div>
+          <div class="turn-counter" id="turn-counter">Session Active</div>
+        </div>
+
+        <div class="disclaimer-banner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span><strong>Demonstration Only:</strong> This conversational assistant drafts a fictional Personal Wishes Document. Not legal advice.</span>
+        </div>
+
+        <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
+
+        <!-- Dynamic Context Suggestions -->
+        <div class="quick-chips-wrapper" id="quick-chips-wrapper" aria-label="Suggested quick answers"></div>
+
+        <!-- Chat Input Form -->
+        <form class="chat-form" id="chat-form">
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="chat-input"
+              class="chat-input"
+              placeholder="Type your response (multi-field answers & corrections welcome)…"
+              autocomplete="off"
+              disabled
+              required
+            />
+            <button type="submit" id="send-btn" class="send-btn" disabled aria-label="Send message">
+              <span>Send</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <div class="chat-footer-hint">
+            <span>💡 <strong>Tip:</strong> You can provide multiple details at once or say <em>"Actually, my address is..."</em> to correct any field.</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right Column: Live Structured State & Authoritative Preview -->
+      <section class="pane preview-pane" aria-labelledby="preview-heading">
+        <div class="pane-header tabs-header">
+          <div class="pane-tabs" role="tablist">
+            <button class="tab-btn active" role="tab" id="tab-state-btn" aria-selected="true" aria-controls="panel-state" data-tab="state">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+              </svg>
+              <span>Structured State</span>
+              <span class="tab-badge" id="state-count-badge">9 fields</span>
+            </button>
+
+            <button class="tab-btn" role="tab" id="tab-doc-btn" aria-selected="false" aria-controls="panel-document" data-tab="document">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Draft Document</span>
+              <span class="tab-badge doc-badge" id="doc-status-badge">Draft</span>
+            </button>
+
+            <button class="tab-btn" role="tab" id="tab-pipe-btn" aria-selected="false" aria-controls="panel-pipeline" data-tab="pipeline">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              <span>Pipeline Telemetry</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel 1: Structured State Cards -->
+        <div class="tab-panel active" id="panel-state" role="tabpanel" aria-labelledby="tab-state-btn">
+          <div class="state-panel-intro">
+            <div class="state-intro-text">
+              <h3 class="sr-only" id="preview-heading">Structured State</h3>
+              <p>Canonical <code>IntakeState</code> schema — the single source of truth, maintained separately from conversational history.</p>
+            </div>
+            <div class="state-privacy-tag" title="Transient in-memory session only. Zero database persistence.">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Transient In-Memory</span>
+            </div>
+          </div>
+
+          <div class="state-cards-grid" id="state-cards-grid"></div>
+        </div>
+
+        <!-- Panel 2: Authoritative Draft Document Preview -->
+        <div class="tab-panel" id="panel-document" role="tabpanel" aria-labelledby="tab-doc-btn" hidden>
+          <div class="doc-toolbar">
+            <div class="doc-toolbar-left">
+              <span class="doc-seal-tag">Authoritative Output</span>
+              <span class="doc-mode-note">Generated deterministically from confirmed state</span>
+            </div>
+            <div class="doc-toolbar-right">
+              <button class="doc-action-btn" id="copy-doc-btn" title="Copy document text">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span id="copy-btn-text">Copy Text</span>
+              </button>
+              <button class="doc-action-btn" id="download-doc-btn" title="Download text file">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download .txt</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="document-parchment-frame">
+            <div class="document-sheet">
+              <div class="document-watermark">FICTIONAL DEMO</div>
+              <pre class="document-text" id="document-text">Answers will appear here as a draft once you start the interview.</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Pipeline Telemetry (Evaluator View) -->
+        <div class="tab-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipe-btn" hidden>
+          <div class="telemetry-panel">
+            <div class="telemetry-header">
+              <h3>Live Engineering Pipeline Telemetry</h3>
+              <p>Real-time visibility into the LLM extraction payload, deterministic validation boundary, and fallback provenance for the current turn.</p>
+            </div>
+
+            <div class="pipeline-diagram">
+              <div class="pipe-node active">
+                <div class="node-badge">1</div>
+                <div class="node-label">User Message</div>
+              </div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node active">
+                <div class="node-badge">2</div>
+                <div class="node-label">LLM Structured Extraction</div>
+              </div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node active">
+                <div class="node-badge">3</div>
+                <div class="node-label">Validation & Safeguards</div>
+              </div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node active">
+                <div class="node-badge">4</div>
+                <div class="node-label">Canonical IntakeState</div>
+              </div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node active">
+                <div class="node-badge">5</div>
+                <div class="node-label">Deterministic Document</div>
+              </div>
+            </div>
+
+            <div class="telemetry-grid">
+              <div class="telemetry-card">
+                <div class="card-label">Turn Telemetry</div>
+                <div class="telemetry-stats">
+                  <div class="stat-item"><span class="stat-name">Active Provider:</span> <strong id="telemetry-provider">primary</strong></div>
+                  <div class="stat-item"><span class="stat-name">Session Revision:</span> <strong id="telemetry-revision">0</strong></div>
+                  <div class="stat-item"><span class="stat-name">Core Complete:</span> <strong id="telemetry-complete">No</strong></div>
+                </div>
+              </div>
+
+              <div class="telemetry-card">
+                <div class="card-label">Turn Validation Boundary</div>
+                <div class="telemetry-lists">
+                  <div><strong>Applied Fields:</strong> <span id="telemetry-applied" class="chip-applied">None yet</span></div>
+                  <div><strong>Clarifications Flagged:</strong> <span id="telemetry-clarified" class="chip-clarified">None</span></div>
+                  <div><strong>Rejected / Dropped:</strong> <span id="telemetry-rejected" class="chip-rejected">None</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="telemetry-card full-width">
+              <div class="card-label">Raw Canonical State Payload (JSON)</div>
+              <pre class="telemetry-json" id="telemetry-json-raw">{}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Architecture Modal -->
+    <div class="modal-backdrop" id="arch-modal" hidden>
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="app-badge">System Architecture</div>
+            <h2 id="modal-title">Engineering Design & Responsibility Boundaries</h2>
+          </div>
+          <button class="modal-close-btn" id="close-arch-modal-btn" aria-label="Close modal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="arch-section">
+            <h4>1. Explicit Responsibility Boundary</h4>
+            <div class="arch-cards-row">
+              <div class="arch-role-card llm">
+                <strong>LLM Responsibility (NLU Only)</strong>
+                <ul>
+                  <li>Extract structured field candidates from natural language</li>
+                  <li>Interpret natural multi-field answers & corrections</li>
+                  <li>Identify ambiguous phrasing & draft conversational clarification</li>
+                </ul>
+              </div>
+              <div class="arch-role-card deterministic">
+                <strong>Deterministic Application Logic (Guarantees)</strong>
+                <ul>
+                  <li>Schema validation & allow-list enforcement (Pydantic)</li>
+                  <li>Deterministic contradiction backstop across turns</li>
+                  <li>Interview question progression & completion checking</li>
+                  <li>Authoritative document templating (zero fact invention)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="arch-section">
+            <h4>2. Canonical State vs Conversation History</h4>
+            <p>The conversation history is <em>never</em> the source of truth for the document. State is explicitly modeled in <code>IntakeState</code>, ensuring corrections immediately overwrite stale data and incomplete fields remain clearly flagged.</p>
+          </div>
+
+          <div class="arch-section">
+            <h4>3. Resilient LLM Abstraction & Automatic Fallback</h4>
+            <p>All provider calls (OpenAI, Gemini) implement the unified <code>LLMClient</code> interface and are wrapped in <code>FallbackLLMClient</code>. If a provider experiences rate limits, network outages, or auth errors, the turn automatically completes on the deterministic mock without stalling the user.</p>
+          </div>
+
+          <div class="arch-section">
+            <h4>4. Zero-Persistence Privacy Guarantee</h4>
+            <p>Personal intake data is held purely in transient in-memory sessions with a 2-hour TTL. No database, cookies, or localStorage are used. Evaluators can reset the session at any time with the "Start Over" button.</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="secondary-btn" id="close-modal-footer-btn">Close Notes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

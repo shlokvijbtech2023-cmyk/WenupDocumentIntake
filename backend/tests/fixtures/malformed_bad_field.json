@@ -1,0 +1,7 @@
+{
+  "updates": [
+    {"field": "social_security_number", "value": "123-45-6789", "status": "set"},
+    {"field": "has_children", "value": "definitely maybe", "status": "set"}
+  ],
+  "assistant_message": "Noted."
+}

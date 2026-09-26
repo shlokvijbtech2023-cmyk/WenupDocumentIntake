@@ -1,0 +1,7 @@
+{
+  "updates": [
+    {"field": "full_name", "value": "Jane Smith", "status": "set"},
+    {"field": "has_children", "value": false, "status": "set"}
+  ],
+  "assistant_message": "Got it, Jane -- and thanks for confirming you don't have children. What's your home address?"
+}

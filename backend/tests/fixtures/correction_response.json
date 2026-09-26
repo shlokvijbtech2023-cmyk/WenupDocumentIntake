@@ -1,0 +1,6 @@
+{
+  "updates": [
+    {"field": "executor.name", "value": "James Smith", "status": "set", "is_correction": true, "note": "user corrected an earlier answer"}
+  ],
+  "assistant_message": "Updated -- your executor is now James Smith. What is James's relationship to you?"
+}
